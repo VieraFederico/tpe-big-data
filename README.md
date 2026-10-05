@@ -10,14 +10,14 @@
 
 ---
 
-> [!IMPORTANTE]
+> [!IMPORTANT]
 > ### Todos los artefactos de la entrega están dentro del informe
 >
 > El **documento de diseño** [`TPE Big Data - Grupo 8 2C 2026.pdf`](./TPE%20Big%20Data%20-%20Grupo%208%202C%202026.pdf) contiene **todos** los artefactos pedidos en la consigna: diagrama de arquitectura v1, matriz requisito-componente, diseño del Data Lake, flujos batch/streaming, lógica MapReduce, supuestos, riesgos y plan de esfuerzo.
 >
 > El notebook **no** contiene esos artefactos: es solamente la **evidencia de lectura y exploración de datos** que respalda la sección 3 del informe.
 
-> [!NOTA]
+> [!NOTE]
 > ### El notebook se ejecutó desde nuestro entorno en Google Drive
 >
 > [`exploracion_datos.ipynb`](./exploracion_datos.ipynb) se corrió en **Google Colab**, montando el **Google Drive** del grupo, donde vive el dataset provisto:

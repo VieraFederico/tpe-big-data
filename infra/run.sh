@@ -17,6 +17,7 @@ Uso: ./infra/run.sh <comando> [args]
   run [pasos]              Corre el pipeline (todos, o p. ej. bronze_batch,bronze_stream)
   check                    Prueba la conexión a Cassandra/AstraDB
   query <archivo.cql> ...  Ejecuta una consulta y guarda evidencia (-p clave=valor)
+  test [args]              Corre los tests (pytest)
   shell                    Abre una terminal dentro del contenedor
   clean                    Borra las salidas del lake (bronze, silver, gold, quarantine, checkpoints)
   down                     Baja los contenedores (Cassandra local incluida)
@@ -72,6 +73,9 @@ case "$command" in
     [[ $# -ge 1 ]] || { echo "Falta el archivo .cql"; exit 1; }
     ensure_cassandra
     pipeline python -m src.serving.queries "$@"
+    ;;
+  test)
+    pipeline python -m pytest tests "$@"
     ;;
   shell)
     pipeline bash

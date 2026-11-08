@@ -30,6 +30,7 @@ services:
       DATALAKE_PATH: /app/data/datalake
     volumes:
       - ../src:/app/src
+      - ../tests:/app/tests
       - ../data:/app/data
       - ../secrets:/app/secrets
       - ../evidence:/app/evidence

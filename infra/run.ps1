@@ -19,6 +19,7 @@ Uso: .\infra\run.ps1 <comando> [args]
   run [pasos]              Corre el pipeline (todos, o p. ej. bronze_batch,bronze_stream)
   check                    Prueba la conexión a Cassandra/AstraDB
   query <archivo.cql> ...  Ejecuta una consulta y guarda evidencia (-p clave=valor)
+  test [args]              Corre los tests (pytest)
   shell                    Abre una terminal dentro del contenedor
   clean                    Borra las salidas del lake (bronze, silver, gold, quarantine, checkpoints)
   down                     Baja los contenedores (Cassandra local incluida)
@@ -74,6 +75,7 @@ switch ($Command) {
         Start-CassandraIfLocal
         Invoke-Pipeline python -m src.serving.queries @Rest
     }
+    "test" { Invoke-Pipeline python -m pytest tests @Rest }
     "shell" { Invoke-Pipeline bash }
     "clean" {
         foreach ($dir in $OutputDirs) {

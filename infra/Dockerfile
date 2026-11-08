@@ -9,6 +9,7 @@ COPY config/requirements.txt .
 RUN pip install --no-cache-dir -r requirements.txt
 
 COPY src ./src
-ENV PYTHONUNBUFFERED=1
+ENV PYTHONUNBUFFERED=1 \
+    PYTHONPATH=/app
 
 CMD ["python", "-m", "src.serving.check_connection"]

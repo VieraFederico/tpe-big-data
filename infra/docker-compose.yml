@@ -32,6 +32,7 @@ services:
       - ../src:/app/src
       - ../data:/app/data
       - ../secrets:/app/secrets
+      - ../evidence:/app/evidence
     depends_on:
       cassandra:
         condition: service_healthy

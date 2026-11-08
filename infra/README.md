@@ -18,7 +18,18 @@ El destino del serving se elige con `SERVING_TARGET` en `config/.env`:
 | `SERVING_TARGET` | Destino | Qué hace falta |
 | :--- | :--- | :--- |
 | `local` | Cassandra en Docker | Nada; el keyspace se crea solo. |
-| `astra` | AstraDB | `ASTRA_DB_APPLICATION_TOKEN` y `ASTRA_DB_API_ENDPOINT`. El secure connect bundle se descarga solo a `secrets/`. El keyspace `cloud_analytics` se crea desde la UI de Astra. |
+| `astra` | AstraDB | Ver [Requisitos para AstraDB](#requisitos-para-astradb). |
+
+### Requisitos para AstraDB
+
+Antes de correr con `SERVING_TARGET=astra`:
+
+1. **Crear el keyspace `cloud_analytics` a mano** desde la UI de Astra: *Databases → (la base) → Data Explorer → Create Keyspace*. Astra no permite `CREATE KEYSPACE` por CQL, así que el pipeline no puede crearlo. Si falta, la conexión falla con `El keyspace 'cloud_analytics' no existe en astra`.
+2. **Generar un token** (*Settings → Tokens*) y copiarlo en `ASTRA_DB_APPLICATION_TOKEN`.
+3. **Copiar el API endpoint** de la base (`https://<db_id>-<region>.apps.astra.datastax.com`) en `ASTRA_DB_API_ENDPOINT`.
+4. Poner `SERVING_TARGET=astra` en `config/.env`.
+
+El secure connect bundle no hace falta descargarlo manualmente: se descarga solo a `secrets/` en la primera conexión.
 
 ## Ejecución
 

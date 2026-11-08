@@ -21,6 +21,6 @@ Las salidas que se ven en el notebook corresponden a esa ejecución. Para reprod
 
 ## `colab_pipeline.ipynb`
 
-El notebook lee `ASTRA_DB_APPLICATION_TOKEN` y `ASTRA_DB_API_ENDPOINT` de **Colab Secrets** (ícono 🔑). No se escriben en el notebook ni en Drive. El secure connect bundle se descarga solo al disco de la VM, que se borra al cerrar la sesión.
+El notebook lee `ASTRA_DB_APPLICATION_TOKEN` y `ASTRA_DB_API_ENDPOINT` de **Colab Secrets**. No se escriben en el notebook ni en Drive. El secure connect bundle se descarga solo al disco de la VM, que se borra al cerrar la sesión.
 
 Usa el dataset que ya está en el repo (`data/datalake/landing`), así que no hace falta montar Drive.

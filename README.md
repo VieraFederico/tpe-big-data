@@ -20,13 +20,15 @@
 > [!NOTE]
 > ### El notebook se ejecutó desde nuestro entorno en Google Drive
 >
-> [`exploracion_datos.ipynb`](./exploracion_datos.ipynb) se corrió en **Google Colab**, montando el **Google Drive** del grupo, donde vive el dataset provisto:
+> [`exploracion_datos.ipynb`](./notebooks/exploracion_datos.ipynb) se corrió en **Google Colab**, montando el **Google Drive** del grupo, donde vive el dataset provisto:
 >
 > ```
 > /content/drive/MyDrive/cloud_provider_challenge_dataset_v1/datalake/landing
 > ```
 >
-> El dataset **no** está subido al repositorio. Las salidas que se ven en el notebook corresponden a esa ejecución.
+> Las salidas que se ven en el notebook corresponden a esa ejecución.
+>
+> Hoy el dataset también está versionado en [`data/datalake/landing/`](./data/datalake/landing/), que es de donde lo lee el pipeline.
 
 ---
 
@@ -48,7 +50,7 @@
 
 ### Cómo reproducirlo
 
-1. Abrir [`exploracion_datos.ipynb`](./exploracion_datos.ipynb) en **Google Colab**.
+1. Abrir [`exploracion_datos.ipynb`](./notebooks/exploracion_datos.ipynb) en **Google Colab**.
 2. Subir el dataset provisto por la catedra a Google Drive en `MyDrive/cloud_provider_challenge_dataset_v1/datalake/landing/`.
 3. Ejecutar todas las celdas (`Runtime → Run all`) y autorizar el montaje de Drive.
 

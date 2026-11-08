@@ -1,10 +1,11 @@
 import logging
 
 from pyspark.sql import DataFrame, SparkSession
+from pyspark.errors import AnalysisException
 from pyspark.sql import functions as F
 
 from src.common.columns import with_technical_columns
-from src.common.lake import write_dataset
+from src.common.lake import read_dataset, write_dataset
 from src.common.readers import read_usage_events_stream
 from src.common.schemas import CORRUPT_RECORD_COL, USAGE_EVENTS
 from src.config import Settings
@@ -46,6 +47,13 @@ def write_micro_batch(settings: Settings):
     return _write
 
 
+def _count_or_zero(spark: SparkSession, settings: Settings, zone: str) -> int:
+    try:
+        return read_dataset(spark, settings, zone, USAGE_EVENTS.name).count()
+    except AnalysisException:
+        return 0
+
+
 def run(spark: SparkSession, settings: Settings) -> dict:
     query = (
         build_stream(spark, settings)
@@ -57,12 +65,14 @@ def run(spark: SparkSession, settings: Settings) -> dict:
     query.awaitTermination()
 
     progress = query.recentProgress
+    state_ops = [op for p in progress for op in p.get("stateOperators", [])]
     stats = {
         "micro_batches": len(progress),
         "rows_read": sum(p["numInputRows"] for p in progress),
-        "dropped_by_watermark": sum(
-            op.get("numRowsDroppedByWatermark", 0) for p in progress for op in p.get("stateOperators", [])
-        ),
+        "dropped_by_watermark": sum(op.get("numRowsDroppedByWatermark", 0) for op in state_ops),
+        "dropped_duplicates": sum(op.get("customMetrics", {}).get("numDroppedDuplicateRows", 0) for op in state_ops),
+        "bronze_total": _count_or_zero(spark, settings, "bronze"),
+        "quarantine_total": _count_or_zero(spark, settings, "quarantine"),
     }
     log.info("bronze/%s: %s", USAGE_EVENTS.name, stats)
     return stats

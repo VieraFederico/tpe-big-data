@@ -144,5 +144,7 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(name)s - %(message)s")
+    from src.common.logging_setup import setup_logging
+
+    setup_logging("queries")
     sys.exit(main())

@@ -1,0 +1,6 @@
+.git
+*.env
+secrets/
+data/
+**/__pycache__
+*.pdf

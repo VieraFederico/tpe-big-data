@@ -33,20 +33,32 @@ El secure connect bundle no hace falta descargarlo manualmente: se descarga solo
 
 ## Ejecución
 
-Todos los comandos se corren desde la raíz del repo.
+Desde la raíz del repo, con `infra/run.sh` (Linux, Mac, Git Bash) o `infra/run.ps1` (PowerShell). Los dos aceptan los mismos comandos:
 
 ```bash
-# Local: levanta Cassandra + pipeline
-docker compose -f infra/docker-compose.yml --profile local up --build
-
-# Cloud: solo el pipeline, contra AstraDB
-docker compose -f infra/docker-compose.yml up --build pipeline
+./infra/run.sh list                              # pasos del pipeline y si están implementados
+./infra/run.sh run                               # pipeline completo
+./infra/run.sh run bronze_batch,bronze_stream    # solo algunos pasos
+./infra/run.sh check                             # prueba la conexión a Cassandra/AstraDB
+./infra/run.sh query src/serving/queries/q1.cql -p org_id=org_001   # consulta + evidencia
+./infra/run.sh shell                             # terminal dentro del contenedor
+./infra/run.sh clean                             # borra las salidas del lake (landing queda)
+./infra/run.sh down                              # baja los contenedores
+./infra/run.sh build                             # reconstruye la imagen
 ```
 
-Por defecto el contenedor corre el chequeo de conexión (`python -m src.serving.check_connection`). Para correr otro módulo:
+```powershell
+.\infra\run.ps1 run bronze_batch
+```
+
+Si `SERVING_TARGET=local`, los comandos que usan Cassandra (`check`, `query`, `run` con `serving`) la levantan solos. Si no existe `config/.env`, se crea desde el ejemplo.
+
+Si PowerShell bloquea el script por la política de ejecución: `powershell -ExecutionPolicy Bypass -File .\infra\run.ps1 <comando>`.
+
+Equivalente sin scripts:
 
 ```bash
-docker compose -f infra/docker-compose.yml run --rm pipeline python -m <modulo>
+docker compose -f infra/docker-compose.yml run --rm pipeline python -m src.pipeline --steps bronze_batch
 ```
 
 ## Volúmenes
@@ -58,9 +70,9 @@ docker compose -f infra/docker-compose.yml run --rm pipeline python -m <modulo>
 ## Limpieza
 
 ```bash
-# Baja los contenedores
-docker compose -f infra/docker-compose.yml --profile local down
+./infra/run.sh clean   # salidas del lake: bronze, silver, gold, quarantine, checkpoints
+./infra/run.sh down    # contenedores
 
-# Baja los contenedores y borra los datos de Cassandra local
+# Además borra los datos de Cassandra local
 docker compose -f infra/docker-compose.yml --profile local down -v
 ```

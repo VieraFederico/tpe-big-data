@@ -11,9 +11,10 @@ def write_dataset(
     zone: str,
     dataset: str,
     partition_by: tuple[str, ...] = ("ingest_date",),
+    mode: str = "overwrite",
 ) -> str:
     path = dataset_path(settings, zone, dataset)
-    df.write.mode("overwrite").partitionBy(*partition_by).parquet(path)
+    df.write.mode(mode).partitionBy(*partition_by).parquet(path)
     return path
 
 

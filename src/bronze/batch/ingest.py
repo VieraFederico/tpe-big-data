@@ -107,7 +107,7 @@ def ingest_source(
 
 
 def _count_ingest(valid: DataFrame, quarantine: DataFrame, source: Source) -> BronzeBatchCounts:
-    """Calcula los conteos de la ingesta con 3 jobs de Spark en vez de 5.
+    """Calcula los conteos de la ingesta.
 
     No recuenta lo que ya se deduce de dos invariantes:
     - split_by_rules manda cada fila a una sola salida: leídas = válidas + quarantine.

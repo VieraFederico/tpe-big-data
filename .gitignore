@@ -2,6 +2,8 @@
 !config/.env.example
 secrets/
 
+.vscode/
+
 data/datalake/bronze/
 data/datalake/silver/
 data/datalake/gold/

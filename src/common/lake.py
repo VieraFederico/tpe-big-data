@@ -99,7 +99,8 @@ class StorageStats:
         average_bytes_per_file = self.bytes / self.files if self.files else 0
         return (
             f"{self.path} | {self.partitions} particiones | {self.files} archivos | "
-            f"{self.bytes / BYTES_PER_MB:.1f} MB (prom. {average_bytes_per_file / BYTES_PER_MB:.2f} MB/archivo)"
+            f"{self.bytes / BYTES_PER_MB:.1f} MB "
+            f"(prom. {average_bytes_per_file / BYTES_PER_MB:.2f} MB/archivo)"
         )
 
 

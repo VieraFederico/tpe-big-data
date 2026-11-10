@@ -65,7 +65,7 @@ def build_stream(spark: SparkSession, settings: Settings) -> DataFrame:
 
 
 def write_micro_batch(settings: Settings) -> Callable[[DataFrame, int], None]:
-    """Devuelve la función de ``foreachBatch`` que separa cada micro-lote en Bronze y quarantine."""
+    """Función de ``foreachBatch`` que reparte cada micro-lote entre Bronze y quarantine."""
 
     def _write(batch_df: DataFrame, batch_id: int) -> None:
         batch_df.persist()

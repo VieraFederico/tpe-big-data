@@ -4,7 +4,14 @@ from datetime import datetime, timezone
 from typing import TypedDict
 
 from pyspark.sql import Column, DataFrame, SparkSession, Window
-from pyspark.sql.functions import col, lit, monotonically_increasing_id, row_number
+from pyspark.sql.functions import (
+    col,
+    count,
+    count_distinct,
+    lit,
+    monotonically_increasing_id,
+    row_number,
+)
 
 from src.common.columns import SOURCE_FILE, with_technical_columns
 from src.common.lake import log_storage_stats, write_dataset
@@ -84,31 +91,57 @@ def ingest_source(
 
         write_dataset(bronze, settings, Zone.BRONZE, source.name)
         write_dataset(quarantine.drop(ROW_ORDER_COL), settings, Zone.QUARANTINE, source.name)
-
-        data_cols = [field.name for field in source.schema.fields]
-        valid_rows = valid.count()
-        distinct_rows = valid.select(*data_cols).distinct().count()
-        read_rows = raw.count()
-        quarantine_rows = quarantine.count()
-        written_rows = bronze.count()
+        counts = _count_ingest(valid, quarantine, source)
     finally:
         raw.unpersist()
+
+    _log_ingest(settings, source, counts)
+    return counts
+
+
+def _count_ingest(valid: DataFrame, quarantine: DataFrame, source: Source) -> BronzeBatchCounts:
+    """Calcula los conteos de la ingesta con 3 jobs de Spark en vez de 5.
+
+    No recuenta lo que ya se deduce de dos invariantes:
+    - split_by_rules manda cada fila a una sola salida: leídas = válidas + quarantine.
+    - Las válidas no tienen clave nula y el dedupe deja una fila por clave:
+      escritas = claves distintas entre las válidas.
+    """
+    valid_rows = valid.count()
+    quarantine_rows = quarantine.count()
+    data_cols = [field.name for field in source.schema.fields]
+    # Una agregación sin groupBy devuelve siempre exactamente una fila.
+    (distinct_summary,) = (
+        valid.select(*data_cols)
+        .distinct()
+        .agg(
+            count(lit(1)).alias("distinct_rows"),
+            count_distinct(*source.natural_key).alias("distinct_keys"),
+        )
+        .collect()
+    )
+    distinct_rows = distinct_summary["distinct_rows"]
+    written_rows = distinct_summary["distinct_keys"]
+
     exact_duplicates = valid_rows - distinct_rows
     key_conflicts = distinct_rows - written_rows
-    counts = BronzeBatchCounts(
-        read=read_rows,
+    return BronzeBatchCounts(
+        read=valid_rows + quarantine_rows,
         quarantine=quarantine_rows,
         written=written_rows,
         exact_duplicates=exact_duplicates,
         key_conflicts=key_conflicts,
         duplicates=exact_duplicates + key_conflicts,
     )
+
+
+def _log_ingest(settings: Settings, source: Source, counts: BronzeBatchCounts) -> None:
+    """Loguea los conteos de la ingesta, avisa si hubo conflictos de clave y el tamaño en disco."""
     if counts["key_conflicts"]:
         log.warning("bronze/%s: %d versiones descartadas por conflicto de clave %s (gana la última)",
                     source.name, counts["key_conflicts"], source.natural_key)
     log.info("bronze/%s: %s", source.name, counts)
     log_storage_stats(settings, source.name, (Zone.BRONZE, Zone.QUARANTINE))
-    return counts
 
 
 def run(spark: SparkSession, settings: Settings) -> dict[str, BronzeBatchCounts]:

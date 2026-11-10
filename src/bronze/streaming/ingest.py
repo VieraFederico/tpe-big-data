@@ -8,7 +8,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import coalesce, col, sha2, struct, to_date, to_json, try_to_timestamp
 
 from src.common.columns import EVENT_DATE, EVENT_TS, with_technical_columns
-from src.common.lake import dataset_storage_stats, read_dataset, write_dataset
+from src.common.lake import log_storage_stats, read_dataset, write_dataset
 from src.common.readers import read_usage_events_stream
 from src.common.schemas import CORRUPT_RECORD_COL, USAGE_EVENTS
 from src.config import Settings, Zone
@@ -127,6 +127,5 @@ def run(spark: SparkSession, settings: Settings) -> BronzeStreamStats:
         "quarantine_total": _count_or_zero(spark, settings, Zone.QUARANTINE),
     }
     log.info("bronze/%s: %s", USAGE_EVENTS.name, stats)
-    for zone in (Zone.BRONZE, Zone.QUARANTINE):
-        log.info("%s/%s (en disco) -> %s", zone, USAGE_EVENTS.name, dataset_storage_stats(settings, zone, USAGE_EVENTS.name))
+    log_storage_stats(settings, USAGE_EVENTS.name, (Zone.BRONZE, Zone.QUARANTINE))
     return stats

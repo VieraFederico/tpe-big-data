@@ -7,7 +7,7 @@ from pyspark.sql import Column, DataFrame, SparkSession, Window
 from pyspark.sql.functions import col, lit, monotonically_increasing_id, row_number
 
 from src.common.columns import SOURCE_FILE, with_technical_columns
-from src.common.lake import dataset_storage_stats, write_dataset
+from src.common.lake import log_storage_stats, write_dataset
 from src.common.readers import read_csv_source
 from src.common.schemas import CORRUPT_RECORD_COL, SOURCES, Source
 from src.config import Settings, Zone
@@ -107,8 +107,7 @@ def ingest_source(
         log.warning("bronze/%s: %d versiones descartadas por conflicto de clave %s (gana la última)",
                     source.name, counts["key_conflicts"], source.natural_key)
     log.info("bronze/%s: %s", source.name, counts)
-    for zone in (Zone.BRONZE, Zone.QUARANTINE):
-        log.info("%s/%s (en disco) -> %s", zone, source.name, dataset_storage_stats(settings, zone, source.name))
+    log_storage_stats(settings, source.name, (Zone.BRONZE, Zone.QUARANTINE))
     return counts
 
 

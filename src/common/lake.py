@@ -1,4 +1,6 @@
 """Lectura y escritura de datasets del lake, organizados por zona (bronze, quarantine, ...)."""
+import logging
+from collections.abc import Iterable
 from dataclasses import dataclass
 from pathlib import Path
 
@@ -6,6 +8,8 @@ from pyspark.sql import DataFrame, SparkSession
 
 from src.common.columns import INGEST_DATE
 from src.config import Settings, Zone
+
+log = logging.getLogger(__name__)
 
 BYTES_PER_MB = 1_000_000
 
@@ -104,3 +108,9 @@ def dataset_storage_stats(settings: Settings, zone: Zone, dataset: str) -> Stora
         files=len(parquet_files),
         bytes=sum(parquet_file.stat().st_size for parquet_file in parquet_files),
     )
+
+
+def log_storage_stats(settings: Settings, dataset: str, zones: Iterable[Zone]) -> None:
+    """Loguea cómo quedó en disco un dataset en cada una de las zonas indicadas."""
+    for zone in zones:
+        log.info("%s/%s (en disco) -> %s", zone, dataset, dataset_storage_stats(settings, zone, dataset))

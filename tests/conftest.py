@@ -1,21 +1,22 @@
 import pytest
-from pyspark.sql import SparkSession
 
+from src.common.spark import get_spark
 from src.config import Settings, Zone
 
 
 @pytest.fixture(scope="session")
 def spark():
-    session = (
-        SparkSession.builder.appName("tests")
-        .master("local[1]")
-        .config("spark.sql.shuffle.partitions", "1")
-        .config("spark.sql.session.timeZone", "UTC")
-        .config("spark.sql.sources.partitionOverwriteMode", "dynamic")
-        .config("spark.ui.enabled", "false")
-        .getOrCreate()
+    """SparkSession chica para tests, con la misma configuración semántica que el pipeline."""
+    session = get_spark(
+        "tests",
+        master="local[1]",
+        config_overrides={
+            "spark.driver.memory": "1g",
+            "spark.sql.shuffle.partitions": "1",
+            "spark.ui.enabled": "false",
+        },
+        log_level="ERROR",
     )
-    session.sparkContext.setLogLevel("ERROR")
     yield session
     session.stop()
 

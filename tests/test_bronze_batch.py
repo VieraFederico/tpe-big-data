@@ -29,8 +29,8 @@ c,no_es_numero
 """
 
 
-def _ingest(spark, settings):
-    Path(settings.zone_path(Zone.LANDING), SOURCE.path).write_text(CSV, encoding="utf-8")
+def _ingest(spark, settings, csv_content=CSV):
+    Path(settings.zone_path(Zone.LANDING), SOURCE.path).write_text(csv_content, encoding="utf-8")
     ingest_ts = lit(datetime(2026, 11, 8, tzinfo=timezone.utc)).cast("timestamp")
     return ingest_source(spark, settings, SOURCE, ingest_ts)
 
@@ -66,15 +66,12 @@ def test_quarantine_por_tipo_invalido_y_clave_nula(spark, settings):
 
 def test_conflicto_de_clave_gana_la_ultima_aparicion(spark, settings):
     # x aparece 3 veces con distinto qty: debe quedar la última (3)
-    csv_content = """id,qty
+    counts = _ingest(spark, settings, csv_content="""id,qty
 x,1
 y,5
 x,2
 x,3
-"""
-    Path(settings.zone_path(Zone.LANDING), SOURCE.path).write_text(csv_content, encoding="utf-8")
-    ingest_ts = lit(datetime(2026, 11, 8, tzinfo=timezone.utc)).cast("timestamp")
-    counts = ingest_source(spark, settings, SOURCE, ingest_ts)
+""")
 
     bronze = read_dataset(spark, settings, Zone.BRONZE, SOURCE.name)
     qty_by_id = {row.id: row.qty for row in bronze.collect()}

@@ -1,4 +1,5 @@
 """Obtención del secure connect bundle de AstraDB (descarga automática si falta)."""
+
 import json
 import logging
 import os
@@ -15,7 +16,9 @@ log = logging.getLogger(__name__)
 
 DEVOPS_API = "https://api.astra.datastax.com/v2/databases/{db_id}/secureBundleURL"
 # https://<db_id (uuid)>-<region>.apps.astra.datastax.com
-ENDPOINT_RE = re.compile(r"^https://([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-")
+ENDPOINT_RE = re.compile(
+    r"^https://([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-"
+)
 DEVOPS_API_TIMEOUT_SECONDS = 30
 BUNDLE_DOWNLOAD_TIMEOUT_SECONDS = 60
 AUTH_ERROR_STATUS_CODES = (401, 403)
@@ -56,12 +59,16 @@ def ensure_bundle(settings: Settings) -> str:
             "ASTRA_DB_API_ENDPOINT para descargarlo"
         )
     db_id = database_id_from_endpoint(settings.astra_api_endpoint)
-    target = Path(settings.astra_bundle_path or REPO_ROOT / "secrets" / f"secure-connect-{db_id}.zip")
+    target = Path(
+        settings.astra_bundle_path or REPO_ROOT / "secrets" / f"secure-connect-{db_id}.zip"
+    )
     if target.is_file():
         return str(target)
 
     if not settings.astra_token:
-        raise ValueError("Falta ASTRA_DB_APPLICATION_TOKEN para descargar el secure connect bundle")
+        raise ValueError(
+            "Falta ASTRA_DB_APPLICATION_TOKEN para descargar el secure connect bundle"
+        )
     log.info("Descargando secure connect bundle de la base %s", db_id)
     download_url = _request_download_url(db_id, settings.astra_token)
     _download(download_url, target)
@@ -82,7 +89,9 @@ def _request_download_url(db_id: str, token: str) -> str:
     except urllib.error.HTTPError as error:
         is_auth_error = error.code in AUTH_ERROR_STATUS_CODES
         hint = " (token sin permisos sobre la base o inválido)" if is_auth_error else ""
-        raise AstraApiError(error.code, f"La DevOps API de Astra respondió {error.code}{hint}") from error
+        raise AstraApiError(
+            error.code, f"La DevOps API de Astra respondió {error.code}{hint}"
+        ) from error
     download_url: str = body["downloadURL"]
     return download_url
 

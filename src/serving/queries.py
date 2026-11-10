@@ -1,4 +1,5 @@
 """CLI para ejecutar una consulta CQL del serving y guardar su evidencia (.txt y .csv)."""
+
 import argparse
 import csv
 import logging
@@ -6,7 +7,7 @@ import sys
 import time
 from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 from typing import Any
 
@@ -44,7 +45,9 @@ class QueryResult:
     rows: list[tuple[Any, ...]]
     total_rows: int
     seconds: float
-    executed_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
+    executed_at: str = field(
+        default_factory=lambda: datetime.now(UTC).isoformat(timespec="seconds")
+    )
 
 
 def run_query(
@@ -102,7 +105,9 @@ def save_evidence(
     txt_path = evidence_dir / f"{result.name}.txt"
     csv_path = evidence_dir / f"{result.name}.csv"
 
-    truncated = f" (se muestran {len(result.rows)})" if result.total_rows > len(result.rows) else ""
+    truncated = (
+        f" (se muestran {len(result.rows)})" if result.total_rows > len(result.rows) else ""
+    )
     report_lines = [
         f"Consulta:   {result.name}",
         f"Ejecutada:  {result.executed_at}",
@@ -141,14 +146,16 @@ def format_table(columns: list[str], rows: list[tuple[Any, ...]], max_rows: int 
     """
     if not columns:
         return "(sin columnas)"
-    shown_rows = [["" if value is None else str(value) for value in row] for row in rows[:max_rows]]
+    shown_rows = [
+        ["" if value is None else str(value) for value in row] for row in rows[:max_rows]
+    ]
     widths = [
         max([len(column_name), *(len(row[index]) for row in shown_rows)])
         for index, column_name in enumerate(columns)
     ]
 
     def format_line(values: list[str]) -> str:
-        return " | ".join(value.ljust(width) for value, width in zip(values, widths))
+        return " | ".join(value.ljust(width) for value, width in zip(values, widths, strict=False))
 
     lines = [format_line(columns), "-+-".join("-" * width for width in widths)]
     lines.extend(format_line(row) for row in shown_rows)
@@ -185,7 +192,9 @@ def parse_param(item: str) -> tuple[str, Any]:
 
     type_name = type_name or "str"
     if type_name not in PARAM_TYPES:
-        raise ValueError(f"Tipo {type_name!r} desconocido en {item!r}; usar uno de {list(PARAM_TYPES)}")
+        raise ValueError(
+            f"Tipo {type_name!r} desconocido en {item!r}; usar uno de {list(PARAM_TYPES)}"
+        )
     try:
         return key, PARAM_TYPES[type_name](raw_value)
     except ValueError as error:

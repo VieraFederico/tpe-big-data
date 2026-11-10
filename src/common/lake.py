@@ -1,4 +1,5 @@
 """Lectura y escritura de datasets del lake, organizados por zona (bronze, quarantine, ...)."""
+
 import logging
 from collections.abc import Iterable
 from dataclasses import dataclass
@@ -66,7 +67,9 @@ def write_dataset(
         Ruta donde quedó escrito el dataset.
     """
     path = dataset_path(settings, zone, dataset)
-    distributed = rebalance_by(df, partition_by) if use_rebalance else df.repartition(*partition_by)
+    distributed = (
+        rebalance_by(df, partition_by) if use_rebalance else df.repartition(*partition_by)
+    )
     distributed.write.mode(mode).partitionBy(*partition_by).parquet(path)
     return path
 
@@ -94,8 +97,10 @@ class StorageStats:
 
     def __str__(self) -> str:
         average_bytes_per_file = self.bytes / self.files if self.files else 0
-        return (f"{self.path} | {self.partitions} particiones | {self.files} archivos | "
-                f"{self.bytes / BYTES_PER_MB:.1f} MB (prom. {average_bytes_per_file / BYTES_PER_MB:.2f} MB/archivo)")
+        return (
+            f"{self.path} | {self.partitions} particiones | {self.files} archivos | "
+            f"{self.bytes / BYTES_PER_MB:.1f} MB (prom. {average_bytes_per_file / BYTES_PER_MB:.2f} MB/archivo)"
+        )
 
 
 def dataset_storage_stats(settings: Settings, zone: Zone, dataset: str) -> StorageStats:
@@ -113,4 +118,6 @@ def dataset_storage_stats(settings: Settings, zone: Zone, dataset: str) -> Stora
 def log_storage_stats(settings: Settings, dataset: str, zones: Iterable[Zone]) -> None:
     """Loguea cómo quedó en disco un dataset en cada una de las zonas indicadas."""
     for zone in zones:
-        log.info("%s/%s (en disco) -> %s", zone, dataset, dataset_storage_stats(settings, zone, dataset))
+        log.info(
+            "%s/%s (en disco) -> %s", zone, dataset, dataset_storage_stats(settings, zone, dataset)
+        )

@@ -1,4 +1,5 @@
 """Nombres de columnas técnicas compartidas entre capas y helper para agregarlas."""
+
 from pyspark.sql import Column, DataFrame
 from pyspark.sql.functions import col, current_timestamp, input_file_name, lit, to_date
 
@@ -13,7 +14,9 @@ EVENT_TS = "event_ts"
 EVENT_DATE = "event_date"
 
 
-def with_technical_columns(df: DataFrame, run_id: str, ingest_ts: Column | None = None) -> DataFrame:
+def with_technical_columns(
+    df: DataFrame, run_id: str, ingest_ts: Column | None = None
+) -> DataFrame:
     """Agrega las columnas de trazabilidad de la ingesta.
 
     Args:

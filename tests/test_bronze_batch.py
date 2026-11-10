@@ -1,4 +1,4 @@
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 from pyspark.sql.functions import col, lit
@@ -8,8 +8,8 @@ from src.bronze.batch import ingest
 from src.bronze.batch.ingest import ROW_ORDER_COL, ingest_source
 from src.common.columns import INGEST_DATE, INGEST_TS, RUN_ID, SOURCE_FILE
 from src.common.lake import dataset_storage_stats, read_dataset
-from src.config import Zone
 from src.common.schemas import CORRUPT_RECORD_COL, SOURCES, Source
+from src.config import Zone
 from src.quality.rules import RULE_ID_COL
 
 SOURCE = Source(
@@ -31,7 +31,7 @@ c,no_es_numero
 
 def _ingest(spark, settings, csv_content=CSV):
     Path(settings.zone_path(Zone.LANDING), SOURCE.path).write_text(csv_content, encoding="utf-8")
-    ingest_ts = lit(datetime(2026, 11, 8, tzinfo=timezone.utc)).cast("timestamp")
+    ingest_ts = lit(datetime(2026, 11, 8, tzinfo=UTC)).cast("timestamp")
     return ingest_source(spark, settings, SOURCE, ingest_ts)
 
 
@@ -39,8 +39,12 @@ def test_conteos(spark, settings):
     counts = _ingest(spark, settings)
 
     assert counts == {
-        "read": 5, "quarantine": 2, "written": 2,
-        "exact_duplicates": 1, "key_conflicts": 0, "duplicates": 1,
+        "read": 5,
+        "quarantine": 2,
+        "written": 2,
+        "exact_duplicates": 1,
+        "key_conflicts": 0,
+        "duplicates": 1,
     }
 
 
@@ -59,19 +63,26 @@ def test_quarantine_por_tipo_invalido_y_clave_nula(spark, settings):
     _ingest(spark, settings)
     quarantine = read_dataset(spark, settings, Zone.QUARANTINE, SOURCE.name)
 
-    assert sorted(row[RULE_ID_COL] for row in quarantine.collect()) == ["BRZ_NULL_KEY", "BRZ_PARSE"]
+    assert sorted(row[RULE_ID_COL] for row in quarantine.collect()) == [
+        "BRZ_NULL_KEY",
+        "BRZ_PARSE",
+    ]
     corrupt = quarantine.filter(col(RULE_ID_COL) == "BRZ_PARSE").first()
     assert corrupt[CORRUPT_RECORD_COL] == "c,no_es_numero"
 
 
 def test_conflicto_de_clave_gana_la_ultima_aparicion(spark, settings):
     # x aparece 3 veces con distinto qty: debe quedar la última (3)
-    counts = _ingest(spark, settings, csv_content="""id,qty
+    counts = _ingest(
+        spark,
+        settings,
+        csv_content="""id,qty
 x,1
 y,5
 x,2
 x,3
-""")
+""",
+    )
 
     bronze = read_dataset(spark, settings, Zone.BRONZE, SOURCE.name)
     qty_by_id = {row.id: row.qty for row in bronze.collect()}
@@ -119,7 +130,9 @@ def test_storage_stats_inexistente_da_ceros(settings):
 def test_run_ingesta_todas_las_fuentes_de_landing(spark, settings):
     for source in SOURCES.values():
         header = ",".join(field.name for field in source.schema.fields)
-        Path(settings.zone_path(Zone.LANDING), source.path).write_text(header + "\n", encoding="utf-8")
+        Path(settings.zone_path(Zone.LANDING), source.path).write_text(
+            header + "\n", encoding="utf-8"
+        )
 
     results = ingest.run(spark, settings)
 

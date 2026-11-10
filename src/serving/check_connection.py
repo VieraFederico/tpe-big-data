@@ -1,4 +1,5 @@
 """Chequeo rápido de la conexión al serving: versión de Cassandra y tablas del keyspace."""
+
 import logging
 import sys
 

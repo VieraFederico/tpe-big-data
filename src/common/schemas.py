@@ -1,4 +1,5 @@
 """Esquemas explícitos de las fuentes de Landing y sus claves naturales."""
+
 from dataclasses import dataclass
 
 from pyspark.sql.types import (
@@ -45,16 +46,29 @@ def _fields(*field_specs: tuple[str, DataType]) -> StructType:
 
 
 STRING, DATE, DOUBLE, BOOLEAN, INTEGER, LONG = (
-    StringType(), DateType(), DoubleType(), BooleanType(), IntegerType(), LongType()
+    StringType(),
+    DateType(),
+    DoubleType(),
+    BooleanType(),
+    IntegerType(),
+    LongType(),
 )
 
 CUSTOMERS_ORGS = Source(
     "customers_orgs",
     "customers_orgs.csv",
     _fields(
-        ("org_id", STRING), ("org_name", STRING), ("industry", STRING), ("hq_region", STRING), ("plan_tier", STRING),
-        ("is_enterprise", BOOLEAN), ("signup_date", DATE), ("sales_rep", STRING), ("lifecycle_stage", STRING),
-        ("marketing_source", STRING), ("nps_score", DOUBLE),
+        ("org_id", STRING),
+        ("org_name", STRING),
+        ("industry", STRING),
+        ("hq_region", STRING),
+        ("plan_tier", STRING),
+        ("is_enterprise", BOOLEAN),
+        ("signup_date", DATE),
+        ("sales_rep", STRING),
+        ("lifecycle_stage", STRING),
+        ("marketing_source", STRING),
+        ("nps_score", DOUBLE),
     ),
     ("org_id",),
 )
@@ -63,8 +77,13 @@ USERS = Source(
     "users",
     "users.csv",
     _fields(
-        ("user_id", STRING), ("org_id", STRING), ("email", STRING), ("role", STRING), ("active", BOOLEAN),
-        ("created_at", DATE), ("last_login", DATE),
+        ("user_id", STRING),
+        ("org_id", STRING),
+        ("email", STRING),
+        ("role", STRING),
+        ("active", BOOLEAN),
+        ("created_at", DATE),
+        ("last_login", DATE),
     ),
     ("user_id",),
 )
@@ -73,8 +92,13 @@ RESOURCES = Source(
     "resources",
     "resources.csv",
     _fields(
-        ("resource_id", STRING), ("org_id", STRING), ("service", STRING), ("region", STRING), ("created_at", DATE),
-        ("state", STRING), ("tags_json", STRING),
+        ("resource_id", STRING),
+        ("org_id", STRING),
+        ("service", STRING),
+        ("region", STRING),
+        ("created_at", DATE),
+        ("state", STRING),
+        ("tags_json", STRING),
     ),
     ("resource_id",),
 )
@@ -83,8 +107,14 @@ BILLING_MONTHLY = Source(
     "billing_monthly",
     "billing_monthly.csv",
     _fields(
-        ("invoice_id", STRING), ("org_id", STRING), ("month", DATE), ("subtotal", DOUBLE), ("credits", DOUBLE),
-        ("taxes", DOUBLE), ("currency", STRING), ("exchange_rate_to_usd", DOUBLE),
+        ("invoice_id", STRING),
+        ("org_id", STRING),
+        ("month", DATE),
+        ("subtotal", DOUBLE),
+        ("credits", DOUBLE),
+        ("taxes", DOUBLE),
+        ("currency", STRING),
+        ("exchange_rate_to_usd", DOUBLE),
     ),
     ("invoice_id",),
 )
@@ -93,8 +123,14 @@ SUPPORT_TICKETS = Source(
     "support_tickets",
     "support_tickets.csv",
     _fields(
-        ("ticket_id", STRING), ("org_id", STRING), ("category", STRING), ("severity", STRING), ("created_at", DATE),
-        ("resolved_at", DATE), ("csat", DOUBLE), ("sla_breached", BOOLEAN),
+        ("ticket_id", STRING),
+        ("org_id", STRING),
+        ("category", STRING),
+        ("severity", STRING),
+        ("created_at", DATE),
+        ("resolved_at", DATE),
+        ("csat", DOUBLE),
+        ("sla_breached", BOOLEAN),
     ),
     ("ticket_id",),
 )
@@ -104,8 +140,13 @@ MARKETING_TOUCHES = Source(
     "marketing_touches.csv",
     _fields(
         # "timestamp" en el CSV es solo fecha (yyyy-MM-dd).
-        ("touch_id", STRING), ("org_id", STRING), ("campaign", STRING), ("channel", STRING), ("timestamp", DATE),
-        ("clicked", BOOLEAN), ("converted", BOOLEAN),
+        ("touch_id", STRING),
+        ("org_id", STRING),
+        ("campaign", STRING),
+        ("channel", STRING),
+        ("timestamp", DATE),
+        ("clicked", BOOLEAN),
+        ("converted", BOOLEAN),
     ),
     ("touch_id",),
 )
@@ -121,8 +162,13 @@ NPS_SURVEYS = Source(
 SOURCES: dict[str, Source] = {
     source.name: source
     for source in (
-        CUSTOMERS_ORGS, USERS, RESOURCES, BILLING_MONTHLY,
-        SUPPORT_TICKETS, MARKETING_TOUCHES, NPS_SURVEYS,
+        CUSTOMERS_ORGS,
+        USERS,
+        RESOURCES,
+        BILLING_MONTHLY,
+        SUPPORT_TICKETS,
+        MARKETING_TOUCHES,
+        NPS_SURVEYS,
     )
 }
 
@@ -131,9 +177,19 @@ USAGE_EVENTS = Source(
     "usage_events",
     "usage_events_stream",
     _fields(
-        ("event_id", STRING), ("timestamp", STRING), ("org_id", STRING), ("resource_id", STRING), ("service", STRING),
-        ("region", STRING), ("metric", STRING), ("value", STRING), ("unit", STRING), ("cost_usd_increment", DOUBLE),
-        ("schema_version", INTEGER), ("carbon_kg", DOUBLE), ("genai_tokens", LONG),
+        ("event_id", STRING),
+        ("timestamp", STRING),
+        ("org_id", STRING),
+        ("resource_id", STRING),
+        ("service", STRING),
+        ("region", STRING),
+        ("metric", STRING),
+        ("value", STRING),
+        ("unit", STRING),
+        ("cost_usd_increment", DOUBLE),
+        ("schema_version", INTEGER),
+        ("carbon_kg", DOUBLE),
+        ("genai_tokens", LONG),
     ),
     ("event_id",),
 )

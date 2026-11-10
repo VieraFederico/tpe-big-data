@@ -4,6 +4,7 @@ Todas las lecturas son PERMISSIVE: las filas que no respetan el esquema dejan el
 original en CORRUPT_RECORD_COL y el resto de las columnas en null, así se pueden mandar
 a quarantine sin perder el dato.
 """
+
 from typing import TypeVar
 
 from pyspark.sql import DataFrame, DataFrameReader, SparkSession
@@ -43,7 +44,9 @@ def read_usage_events_stream(
 
 def _permissive(reader: ReaderT) -> ReaderT:
     """Configura el lector para guardar las filas mal formadas en CORRUPT_RECORD_COL."""
-    return reader.option("mode", "PERMISSIVE").option("columnNameOfCorruptRecord", CORRUPT_RECORD_COL)
+    return reader.option("mode", "PERMISSIVE").option(
+        "columnNameOfCorruptRecord", CORRUPT_RECORD_COL
+    )
 
 
 def _events_glob(settings: Settings) -> str:

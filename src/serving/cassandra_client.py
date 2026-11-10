@@ -1,4 +1,5 @@
 """Sesiones CQL contra la Cassandra local o AstraDB."""
+
 import atexit
 import logging
 from collections.abc import Iterator
@@ -78,8 +79,11 @@ def get_session(settings: Settings | None = None) -> Session:
         cluster.shutdown()
         raise
 
-    log.info("Sesión CQL abierta (target=%s, keyspace=%s)",
-             resolved_settings.serving_target, resolved_settings.keyspace)
+    log.info(
+        "Sesión CQL abierta (target=%s, keyspace=%s)",
+        resolved_settings.serving_target,
+        resolved_settings.keyspace,
+    )
     return session
 
 

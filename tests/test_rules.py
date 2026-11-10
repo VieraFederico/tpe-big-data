@@ -1,7 +1,14 @@
 import pytest
 from pyspark.sql.functions import col
 
-from src.quality.rules import QUARANTINE_TS_COL, REASON_COL, RULE_ID_COL, Rule, any_null, split_by_rules
+from src.quality.rules import (
+    QUARANTINE_TS_COL,
+    REASON_COL,
+    RULE_ID_COL,
+    Rule,
+    any_null,
+    split_by_rules,
+)
 
 
 def _sample_df(spark):

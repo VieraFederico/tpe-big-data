@@ -11,8 +11,13 @@ DB_ID = "0123abcd-0123-4567-89ab-0123456789ab"
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch):
-    for variable_name in ("SERVING_TARGET", "ASTRA_DB_APPLICATION_TOKEN", "ASTRA_DB_API_ENDPOINT",
-                          "ASTRA_DB_SECURE_BUNDLE_PATH", "DATALAKE_PATH"):
+    for variable_name in (
+        "SERVING_TARGET",
+        "ASTRA_DB_APPLICATION_TOKEN",
+        "ASTRA_DB_API_ENDPOINT",
+        "ASTRA_DB_SECURE_BUNDLE_PATH",
+        "DATALAKE_PATH",
+    ):
         monkeypatch.delenv(variable_name, raising=False)
 
 
@@ -54,7 +59,9 @@ def test_astra_sin_endpoint_ni_bundle(monkeypatch):
 def test_astra_con_token_y_endpoint(monkeypatch):
     monkeypatch.setenv("SERVING_TARGET", "astra")
     monkeypatch.setenv("ASTRA_DB_APPLICATION_TOKEN", "AstraCS:x")
-    monkeypatch.setenv("ASTRA_DB_API_ENDPOINT", f"https://{DB_ID}-us-east1.apps.astra.datastax.com")
+    monkeypatch.setenv(
+        "ASTRA_DB_API_ENDPOINT", f"https://{DB_ID}-us-east1.apps.astra.datastax.com"
+    )
 
     assert load_settings().serving_target == "astra"
 

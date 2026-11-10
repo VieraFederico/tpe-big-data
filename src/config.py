@@ -1,8 +1,9 @@
 """Configuración del pipeline, leída de variables de entorno (y de config/.env si existe)."""
+
 import os
 import uuid
 from dataclasses import dataclass, field
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from enum import StrEnum
 from pathlib import Path
 from typing import Literal, cast, get_args
@@ -37,7 +38,7 @@ class Zone(StrEnum):
 
 def new_run_id() -> str:
     """Genera un id de corrida ordenable por fecha, p. ej. ``20261110T153000Z-a1b2c3``."""
-    timestamp = datetime.now(timezone.utc).strftime(RUN_TIMESTAMP_FORMAT)
+    timestamp = datetime.now(UTC).strftime(RUN_TIMESTAMP_FORMAT)
     return f"{timestamp}-{uuid.uuid4().hex[:6]}"
 
 
@@ -87,7 +88,9 @@ def load_settings(run_id: str | None = None) -> Settings:
     """
     target = os.getenv("SERVING_TARGET", "local").strip().lower()
     if target not in VALID_TARGETS:
-        raise ValueError(f"SERVING_TARGET={target!r} inválido; usar uno de {sorted(VALID_TARGETS)}")
+        raise ValueError(
+            f"SERVING_TARGET={target!r} inválido; usar uno de {sorted(VALID_TARGETS)}"
+        )
 
     settings = Settings(
         datalake_path=os.getenv("DATALAKE_PATH", "./data/datalake"),

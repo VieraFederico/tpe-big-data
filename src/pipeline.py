@@ -1,4 +1,5 @@
 """Punto de entrada del pipeline Landing -> Serving: ejecuta los pasos en orden."""
+
 import argparse
 import importlib
 import logging
@@ -62,8 +63,13 @@ def run_steps(steps: list[str], run_id: str | None = None) -> None:
         raise ValueError(f"Pasos desconocidos: {unknown}. Disponibles: {list(STEPS)}")
 
     settings = load_settings(run_id)
-    log.info("Pipeline: run_id=%s, pasos=%s, lake=%s, serving=%s",
-             settings.run_id, steps, settings.datalake_path, settings.serving_target)
+    log.info(
+        "Pipeline: run_id=%s, pasos=%s, lake=%s, serving=%s",
+        settings.run_id,
+        steps,
+        settings.datalake_path,
+        settings.serving_target,
+    )
     spark = get_spark()
     try:
         for step in steps:
@@ -78,8 +84,12 @@ def run_steps(steps: list[str], run_id: str | None = None) -> None:
 def main(argv: list[str] | None = None) -> int:
     """CLI del pipeline. Devuelve el código de salida (0 ok, 1 si falló algún paso)."""
     parser = argparse.ArgumentParser(description="Ejecuta el pipeline Landing -> Serving.")
-    parser.add_argument("--steps", help=f"Pasos separados por coma (default: todos). Opciones: {','.join(STEPS)}")
-    parser.add_argument("--list", action="store_true", help="Lista los pasos y si están implementados")
+    parser.add_argument(
+        "--steps", help=f"Pasos separados por coma (default: todos). Opciones: {','.join(STEPS)}"
+    )
+    parser.add_argument(
+        "--list", action="store_true", help="Lista los pasos y si están implementados"
+    )
     arguments = parser.parse_args(argv)
 
     if arguments.list:

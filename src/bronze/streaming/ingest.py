@@ -1,4 +1,5 @@
 """Paso bronze_stream: ingesta incremental de los eventos de uso de Landing a Bronze."""
+
 import logging
 from collections.abc import Callable
 from typing import TypedDict
@@ -48,7 +49,9 @@ def build_stream(spark: SparkSession, settings: Settings) -> DataFrame:
     """
     source_cols = [field.name for field in USAGE_EVENTS.read_schema().fields]
     return (
-        with_technical_columns(read_usage_events_stream(spark, settings, MAX_FILES_PER_TRIGGER), settings.run_id)
+        with_technical_columns(
+            read_usage_events_stream(spark, settings, MAX_FILES_PER_TRIGGER), settings.run_id
+        )
         .withColumn(EVENT_TS, try_to_timestamp(col("timestamp")))
         .withColumn(EVENT_DATE, to_date(EVENT_TS))
         .withColumn(
@@ -68,12 +71,29 @@ def write_micro_batch(settings: Settings) -> Callable[[DataFrame, int], None]:
         batch_df.persist()
         try:
             valid, quarantine = split_by_rules(batch_df, bronze_event_rules())
-            write_dataset(valid.drop(CORRUPT_RECORD_COL), settings, Zone.BRONZE, USAGE_EVENTS.name,
-                          partition_by=(EVENT_DATE,), mode="append", use_rebalance=False)
-            write_dataset(quarantine, settings, Zone.QUARANTINE, USAGE_EVENTS.name,
-                          mode="append", use_rebalance=False)
-            log.info("Micro-lote %d: %d a bronze, %d a quarantine",
-                     batch_id, valid.count(), quarantine.count())
+            write_dataset(
+                valid.drop(CORRUPT_RECORD_COL),
+                settings,
+                Zone.BRONZE,
+                USAGE_EVENTS.name,
+                partition_by=(EVENT_DATE,),
+                mode="append",
+                use_rebalance=False,
+            )
+            write_dataset(
+                quarantine,
+                settings,
+                Zone.QUARANTINE,
+                USAGE_EVENTS.name,
+                mode="append",
+                use_rebalance=False,
+            )
+            log.info(
+                "Micro-lote %d: %d a bronze, %d a quarantine",
+                batch_id,
+                valid.count(),
+                quarantine.count(),
+            )
         finally:
             batch_df.unpersist()
 
@@ -101,7 +121,10 @@ def run(spark: SparkSession, settings: Settings) -> BronzeStreamStats:
     query = (
         build_stream(spark, settings)
         .writeStream.foreachBatch(write_micro_batch(settings))
-        .option("checkpointLocation", f"{settings.zone_path(Zone.CHECKPOINTS)}/{Zone.BRONZE}_{USAGE_EVENTS.name}")
+        .option(
+            "checkpointLocation",
+            f"{settings.zone_path(Zone.CHECKPOINTS)}/{Zone.BRONZE}_{USAGE_EVENTS.name}",
+        )
         .trigger(availableNow=True)
         .start()
     )
@@ -117,7 +140,8 @@ def run(spark: SparkSession, settings: Settings) -> BronzeStreamStats:
         "micro_batches": len(batch_progresses),
         "rows_read": sum(batch_progress["numInputRows"] for batch_progress in batch_progresses),
         "dropped_by_watermark": sum(
-            state_operator.get("numRowsDroppedByWatermark", 0) for state_operator in state_operators
+            state_operator.get("numRowsDroppedByWatermark", 0)
+            for state_operator in state_operators
         ),
         "dropped_duplicates": sum(
             state_operator.get("customMetrics", {}).get("numDroppedDuplicateRows", 0)

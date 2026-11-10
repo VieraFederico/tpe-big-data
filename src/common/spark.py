@@ -1,4 +1,5 @@
 """Creación de la SparkSession del pipeline."""
+
 import os
 from collections.abc import Mapping
 
@@ -41,5 +42,7 @@ def get_spark(
     for key, value in config.items():
         builder = builder.config(key, value)
     spark = builder.getOrCreate()
-    spark.sparkContext.setLogLevel(log_level if log_level else os.environ.get("SPARK_LOG_LEVEL", "WARN"))
+    spark.sparkContext.setLogLevel(
+        log_level if log_level else os.environ.get("SPARK_LOG_LEVEL", "WARN")
+    )
     return spark

@@ -1,4 +1,5 @@
 """Reglas de calidad declarativas y separación de filas válidas / en cuarentena."""
+
 from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import reduce
@@ -46,8 +47,12 @@ def split_by_rules(df: DataFrame, rules: list[Rule]) -> tuple[DataFrame, DataFra
     # Se arma de atrás para adelante para que la primera regla quede como la condición externa.
     for rule in reversed(rules):
         is_violated = coalesce(rule.violation, lit(False))
-        first_violated_rule_id = when(is_violated, lit(rule.rule_id)).otherwise(first_violated_rule_id)
-        first_violated_reason = when(is_violated, lit(rule.reason)).otherwise(first_violated_reason)
+        first_violated_rule_id = when(is_violated, lit(rule.rule_id)).otherwise(
+            first_violated_rule_id
+        )
+        first_violated_reason = when(is_violated, lit(rule.reason)).otherwise(
+            first_violated_reason
+        )
 
     tagged = df.withColumn(RULE_ID_COL, first_violated_rule_id)
     valid = tagged.filter(col(RULE_ID_COL).isNull()).drop(RULE_ID_COL)

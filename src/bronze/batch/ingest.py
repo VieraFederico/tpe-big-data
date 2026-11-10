@@ -1,6 +1,7 @@
 """Paso bronze_batch: ingesta de las fuentes CSV de Landing a Bronze."""
+
 import logging
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from typing import TypedDict
 
 from pyspark.sql import Column, DataFrame, SparkSession, Window
@@ -38,7 +39,9 @@ def dedupe_last_wins(df: DataFrame, natural_key: tuple[str, ...]) -> DataFrame:
     Returns:
         Una fila por valor de la clave natural.
     """
-    window = Window.partitionBy(*natural_key).orderBy(col(SOURCE_FILE).desc(), col(ROW_ORDER_COL).desc())
+    window = Window.partitionBy(*natural_key).orderBy(
+        col(SOURCE_FILE).desc(), col(ROW_ORDER_COL).desc()
+    )
     return (
         df.withColumn("_position_in_key", row_number().over(window))
         .filter(col("_position_in_key") == 1)
@@ -81,13 +84,17 @@ def ingest_source(
         Conteos de la ingesta.
     """
     raw = (
-        with_technical_columns(read_csv_source(spark, source, settings), settings.run_id, ingest_ts)
+        with_technical_columns(
+            read_csv_source(spark, source, settings), settings.run_id, ingest_ts
+        )
         .withColumn(ROW_ORDER_COL, monotonically_increasing_id())
         .cache()
     )
     try:
         valid, quarantine = split_by_rules(raw, bronze_structural_rules(source))
-        bronze = dedupe_last_wins(valid, source.natural_key).drop(CORRUPT_RECORD_COL, ROW_ORDER_COL)
+        bronze = dedupe_last_wins(valid, source.natural_key).drop(
+            CORRUPT_RECORD_COL, ROW_ORDER_COL
+        )
 
         write_dataset(bronze, settings, Zone.BRONZE, source.name)
         write_dataset(quarantine.drop(ROW_ORDER_COL), settings, Zone.QUARANTINE, source.name)
@@ -138,13 +145,19 @@ def _count_ingest(valid: DataFrame, quarantine: DataFrame, source: Source) -> Br
 def _log_ingest(settings: Settings, source: Source, counts: BronzeBatchCounts) -> None:
     """Loguea los conteos de la ingesta, avisa si hubo conflictos de clave y el tamaño en disco."""
     if counts["key_conflicts"]:
-        log.warning("bronze/%s: %d versiones descartadas por conflicto de clave %s (gana la última)",
-                    source.name, counts["key_conflicts"], source.natural_key)
+        log.warning(
+            "bronze/%s: %d versiones descartadas por conflicto de clave %s (gana la última)",
+            source.name,
+            counts["key_conflicts"],
+            source.natural_key,
+        )
     log.info("bronze/%s: %s", source.name, counts)
     log_storage_stats(settings, source.name, (Zone.BRONZE, Zone.QUARANTINE))
 
 
 def run(spark: SparkSession, settings: Settings) -> dict[str, BronzeBatchCounts]:
     """Paso ``bronze_batch``: ingesta todas las fuentes CSV y devuelve sus conteos por nombre."""
-    ingest_ts = lit(datetime.now(timezone.utc)).cast("timestamp")
-    return {name: ingest_source(spark, settings, source, ingest_ts) for name, source in SOURCES.items()}
+    ingest_ts = lit(datetime.now(UTC)).cast("timestamp")
+    return {
+        name: ingest_source(spark, settings, source, ingest_ts) for name, source in SOURCES.items()
+    }

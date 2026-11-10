@@ -1,4 +1,5 @@
 """Escritura de DataFrames de Spark en Cassandra/AstraDB, en paralelo desde los workers."""
+
 import logging
 import os
 import re
@@ -87,19 +88,25 @@ def write_dataframe(
         settings=resolved_settings,
         cql=f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({', '.join('?' * len(columns))})",
         columns=columns,
-        concurrency=concurrency or int(os.getenv("CASSANDRA_WRITE_CONCURRENCY", DEFAULT_WRITE_CONCURRENCY)),
+        concurrency=concurrency
+        or int(os.getenv("CASSANDRA_WRITE_CONCURRENCY", DEFAULT_WRITE_CONCURRENCY)),
         batch_rows=batch_rows,
     )
 
     started = time.monotonic()
-    log.info("Cargando %s (target=%s, concurrency=%d)",
-             table, resolved_settings.serving_target, spec.concurrency)
-    written, failed = (
-        df.rdd.mapPartitions(lambda rows: _write_partition(spec, rows))
-        .fold((0, 0), _add_counts)
+    log.info(
+        "Cargando %s (target=%s, concurrency=%d)",
+        table,
+        resolved_settings.serving_target,
+        spec.concurrency,
+    )
+    written, failed = df.rdd.mapPartitions(lambda rows: _write_partition(spec, rows)).fold(
+        (0, 0), _add_counts
     )
     result = WriteResult(table, written, failed, round(time.monotonic() - started, 2))
-    log.info("Carga %s: %d filas escritas, %d fallidas en %.2fs", table, written, failed, result.seconds)
+    log.info(
+        "Carga %s: %d filas escritas, %d fallidas en %.2fs", table, written, failed, result.seconds
+    )
 
     if failed and fail_on_error:
         raise WriteFailedError(table, failed)

@@ -38,6 +38,8 @@ class WriteFailedError(ServingError):
     """
 
     def __init__(self, table: str, rows_failed: int) -> None:
-        super().__init__(f"{rows_failed} filas fallaron al escribir {table}; ver logs de los workers")
+        super().__init__(
+            f"{rows_failed} filas fallaron al escribir {table}; ver logs de los workers"
+        )
         self.table = table
         self.rows_failed = rows_failed

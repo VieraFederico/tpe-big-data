@@ -9,6 +9,15 @@ from src.config import Settings
 def dataset_path(settings: Settings, zone: str, dataset: str) -> str:
     return f"{settings.zone_path(zone)}/{dataset}"
 
+# df.hint("rebalance", "col") toma los nombres como literales y falla.
+# Con esto evitamos eso y podemos pasar una tupla de nombres de columna.
+def rebalance_by(df: DataFrame, columns: tuple[str, ...]) -> DataFrame:
+    if not columns:
+        return df.hint("rebalance")
+    column_list = ", ".join(f"`{name}`" for name in columns)
+    return df.sparkSession.sql(f"SELECT /*+ REBALANCE({column_list}) */ * FROM {{df}}", df=df)
+
+
 def write_dataset(
     df: DataFrame,
     settings: Settings,
@@ -19,7 +28,7 @@ def write_dataset(
     use_rebalance: bool = True,
 ) -> str:
     path = dataset_path(settings, zone, dataset)
-    distributed = df.hint("rebalance", *partition_by) if use_rebalance else df.repartition(*partition_by)
+    distributed = rebalance_by(df, partition_by) if use_rebalance else df.repartition(*partition_by)
     distributed.write.mode(mode).partitionBy(*partition_by).parquet(path)
     return path
 

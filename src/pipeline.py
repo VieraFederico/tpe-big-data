@@ -6,8 +6,13 @@ import sys
 import time
 from collections.abc import Callable
 
+from pyspark.sql import SparkSession
+
 from src.common.logging_setup import setup_logging
-from src.config import load_settings, new_run_id
+from src.common.spark import get_spark
+from src.config import Settings, load_settings, new_run_id
+
+StepRunner = Callable[[SparkSession, Settings], object]
 
 log = logging.getLogger("pipeline")
 
@@ -20,7 +25,7 @@ STEPS: dict[str, str] = {
 }
 
 
-def _resolve(step: str) -> Callable[..., object]:
+def _resolve(step: str) -> StepRunner:
     """Importa el módulo del paso y devuelve su función ``run(spark, settings)``.
 
     Raises:
@@ -54,8 +59,6 @@ def run_steps(steps: list[str], run_id: str | None = None) -> None:
     unknown = [step for step in steps if step not in STEPS]
     if unknown:
         raise ValueError(f"Pasos desconocidos: {unknown}. Disponibles: {list(STEPS)}")
-
-    from src.common.spark import get_spark
 
     settings = load_settings(run_id)
     log.info("Pipeline: run_id=%s, pasos=%s, lake=%s, serving=%s",

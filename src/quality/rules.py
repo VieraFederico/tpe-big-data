@@ -1,4 +1,5 @@
 """Reglas de calidad declarativas y separación de filas válidas / en cuarentena."""
+from collections.abc import Sequence
 from dataclasses import dataclass
 from functools import reduce
 
@@ -58,7 +59,7 @@ def split_by_rules(df: DataFrame, rules: list[Rule]) -> tuple[DataFrame, DataFra
     return valid, quarantine
 
 
-def any_null(columns: tuple[str, ...] | list[str]) -> Column:
+def any_null(columns: Sequence[str]) -> Column:
     """Condición verdadera si al menos una de las columnas es null.
 
     Raises:

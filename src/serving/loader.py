@@ -3,9 +3,12 @@ import logging
 import os
 import re
 import time
+from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
-from itertools import islice
-from typing import Callable, Iterable, Iterator
+from itertools import chain, islice
+from typing import Any
+
+from pyspark.sql import DataFrame, Row
 
 from src.config import Settings, load_settings
 
@@ -43,7 +46,7 @@ class _WriteSpec:
 
 
 def write_dataframe(
-    df,
+    df: DataFrame,
     table: str,
     settings: Settings | None = None,
     *,
@@ -100,7 +103,9 @@ def write_dataframe(
     return result
 
 
-def foreach_batch_writer(table: str, settings: Settings | None = None, **write_options) -> Callable:
+def foreach_batch_writer(
+    table: str, settings: Settings | None = None, **write_options: Any
+) -> Callable[[DataFrame, int], None]:
     """Devuelve una función para ``foreachBatch`` que escribe cada micro-lote en Cassandra.
 
     Ejemplo: ``df.writeStream.foreachBatch(foreach_batch_writer("my_table")).start()``.
@@ -112,7 +117,7 @@ def foreach_batch_writer(table: str, settings: Settings | None = None, **write_o
     """
     resolved_settings = settings or load_settings()
 
-    def _write(batch_df, batch_id: int) -> None:
+    def _write(batch_df: DataFrame, batch_id: int) -> None:
         result = write_dataframe(batch_df, table, resolved_settings, **write_options)
         log.info("Micro-lote %d -> %s: %d filas", batch_id, table, result.rows_written)
 
@@ -124,7 +129,7 @@ def _add_counts(left: tuple[int, int], right: tuple[int, int]) -> tuple[int, int
     return left[0] + right[0], left[1] + right[1]
 
 
-def _write_partition(spec: _WriteSpec, rows: Iterable) -> Iterator[tuple[int, int]]:
+def _write_partition(spec: _WriteSpec, rows: Iterable[Row]) -> Iterator[tuple[int, int]]:
     """Escribe las filas de una partición y emite un único par (escritas, fallidas).
 
     Las particiones vacías no abren sesión. Solo se loguea el primer error, para no
@@ -135,8 +140,8 @@ def _write_partition(spec: _WriteSpec, rows: Iterable) -> Iterator[tuple[int, in
 
     from src.serving.cassandra_client import get_shared_session
 
-    rows = iter(rows)
-    first_row = next(rows, None)
+    row_iterator = iter(rows)
+    first_row = next(row_iterator, None)
     if first_row is None:
         yield (0, 0)
         return
@@ -144,7 +149,7 @@ def _write_partition(spec: _WriteSpec, rows: Iterable) -> Iterator[tuple[int, in
     session = get_shared_session(spec.settings)
     prepared = session.prepare(spec.cql)
     written = failed = 0
-    pending_rows = _chain_first(first_row, rows)
+    pending_rows = chain([first_row], row_iterator)
 
     while row_chunk := list(islice(pending_rows, spec.batch_rows)):
         params = [
@@ -163,8 +168,3 @@ def _write_partition(spec: _WriteSpec, rows: Iterable) -> Iterator[tuple[int, in
                 failed += 1
 
     yield (written, failed)
-
-
-def _chain_first(first, rest: Iterator) -> Iterator:
-    yield first
-    yield from rest

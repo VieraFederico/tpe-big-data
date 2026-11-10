@@ -1,8 +1,10 @@
 """Paso bronze_stream: ingesta incremental de los eventos de uso de Landing a Bronze."""
 import logging
+from collections.abc import Callable
+from typing import TypedDict
 
-from pyspark.sql import DataFrame, SparkSession
 from pyspark.errors import AnalysisException
+from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import coalesce, col, sha2, struct, to_date, to_json, try_to_timestamp
 
 from src.common.columns import EVENT_DATE, EVENT_TS, with_technical_columns
@@ -17,6 +19,26 @@ log = logging.getLogger(__name__)
 
 WATERMARK = "61 days"
 MAX_FILES_PER_TRIGGER = 10
+
+
+class BronzeStreamStats(TypedDict):
+    """Métricas de una corrida del stream de eventos a Bronze.
+
+    Attributes:
+        micro_batches: Micro-lotes procesados en esta corrida.
+        rows_read: Filas leídas de Landing en esta corrida.
+        dropped_by_watermark: Eventos descartados por llegar detrás del watermark.
+        dropped_duplicates: Eventos descartados por duplicados.
+        bronze_total: Filas acumuladas en Bronze (todas las corridas).
+        quarantine_total: Filas acumuladas en quarantine (todas las corridas).
+    """
+
+    micro_batches: int
+    rows_read: int
+    dropped_by_watermark: int
+    dropped_duplicates: int
+    bronze_total: int
+    quarantine_total: int
 
 
 def build_stream(spark: SparkSession, settings: Settings) -> DataFrame:
@@ -39,7 +61,7 @@ def build_stream(spark: SparkSession, settings: Settings) -> DataFrame:
     )
 
 
-def write_micro_batch(settings: Settings):
+def write_micro_batch(settings: Settings) -> Callable[[DataFrame, int], None]:
     """Devuelve la función de ``foreachBatch`` que separa cada micro-lote en Bronze y quarantine."""
 
     def _write(batch_df: DataFrame, batch_id: int) -> None:
@@ -66,7 +88,7 @@ def _count_or_zero(spark: SparkSession, settings: Settings, zone: str) -> int:
         return 0
 
 
-def run(spark: SparkSession, settings: Settings) -> dict:
+def run(spark: SparkSession, settings: Settings) -> BronzeStreamStats:
     """Paso ``bronze_stream``: procesa los archivos nuevos (availableNow) y devuelve métricas.
 
     El checkpoint recuerda qué archivos ya se leyeron y el estado de deduplicación,
@@ -91,7 +113,7 @@ def run(spark: SparkSession, settings: Settings) -> dict:
         for batch_progress in batch_progresses
         for state_operator in batch_progress.get("stateOperators", [])
     ]
-    stats = {
+    stats: BronzeStreamStats = {
         "micro_batches": len(batch_progresses),
         "rows_read": sum(batch_progress["numInputRows"] for batch_progress in batch_progresses),
         "dropped_by_watermark": sum(

@@ -4,6 +4,7 @@ import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
+from typing import Literal, cast, get_args
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 
@@ -15,7 +16,8 @@ try:
 except ImportError:
     pass
 
-VALID_TARGETS = {"local", "astra"}
+ServingTarget = Literal["local", "astra"]
+VALID_TARGETS: frozenset[str] = frozenset(get_args(ServingTarget))
 
 
 def new_run_id() -> str:
@@ -41,7 +43,7 @@ class Settings:
     """
 
     datalake_path: str
-    serving_target: str
+    serving_target: ServingTarget
     keyspace: str
     cassandra_host: str
     cassandra_port: int
@@ -74,7 +76,7 @@ def load_settings(run_id: str | None = None) -> Settings:
 
     settings = Settings(
         datalake_path=os.getenv("DATALAKE_PATH", "./data/datalake"),
-        serving_target=target,
+        serving_target=cast(ServingTarget, target),  # ya validado contra VALID_TARGETS
         keyspace=os.getenv("CASSANDRA_KEYSPACE", "cloud_analytics"),
         cassandra_host=os.getenv("CASSANDRA_HOST", "localhost"),
         cassandra_port=int(os.getenv("CASSANDRA_PORT", "9042")),

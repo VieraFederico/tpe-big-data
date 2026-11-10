@@ -1,6 +1,7 @@
 """Paso bronze_batch: ingesta de las fuentes CSV de Landing a Bronze."""
 import logging
 from datetime import datetime, timezone
+from typing import TypedDict
 
 from pyspark.sql import Column, DataFrame, SparkSession, Window
 from pyspark.sql.functions import col, lit, monotonically_increasing_id, row_number
@@ -38,7 +39,29 @@ def dedupe_last_wins(df: DataFrame, natural_key: tuple[str, ...]) -> DataFrame:
     )
 
 
-def ingest_source(spark: SparkSession, settings: Settings, source: Source, ingest_ts: Column) -> dict:
+class BronzeBatchCounts(TypedDict):
+    """Conteos de la ingesta de una fuente a Bronze.
+
+    Attributes:
+        read: Filas leídas de Landing.
+        quarantine: Filas mandadas a quarantine.
+        written: Filas escritas en Bronze.
+        exact_duplicates: Filas válidas repetidas en todas sus columnas.
+        key_conflicts: Versiones distintas de una misma clave descartadas (gana la última).
+        duplicates: exact_duplicates + key_conflicts.
+    """
+
+    read: int
+    quarantine: int
+    written: int
+    exact_duplicates: int
+    key_conflicts: int
+    duplicates: int
+
+
+def ingest_source(
+    spark: SparkSession, settings: Settings, source: Source, ingest_ts: Column
+) -> BronzeBatchCounts:
     """Ingesta una fuente CSV de Landing a Bronze, mandando las filas inválidas a quarantine.
 
     Args:
@@ -48,8 +71,7 @@ def ingest_source(spark: SparkSession, settings: Settings, source: Source, inges
         ingest_ts: Momento de ingesta, compartido por todas las fuentes de la corrida.
 
     Returns:
-        Conteos de la ingesta: ``read``, ``quarantine``, ``written``,
-        ``exact_duplicates``, ``key_conflicts`` y ``duplicates``.
+        Conteos de la ingesta.
     """
     raw = (
         with_technical_columns(read_csv_source(spark, source, settings), settings.run_id, ingest_ts)
@@ -66,16 +88,21 @@ def ingest_source(spark: SparkSession, settings: Settings, source: Source, inges
         data_cols = [field.name for field in source.schema.fields]
         valid_rows = valid.count()
         distinct_rows = valid.select(*data_cols).distinct().count()
-        counts = {
-            "read": raw.count(),
-            "quarantine": quarantine.count(),
-            "written": bronze.count(),
-        }
+        read_rows = raw.count()
+        quarantine_rows = quarantine.count()
+        written_rows = bronze.count()
     finally:
         raw.unpersist()
-    counts["exact_duplicates"] = valid_rows - distinct_rows
-    counts["key_conflicts"] = distinct_rows - counts["written"]
-    counts["duplicates"] = counts["exact_duplicates"] + counts["key_conflicts"]
+    exact_duplicates = valid_rows - distinct_rows
+    key_conflicts = distinct_rows - written_rows
+    counts = BronzeBatchCounts(
+        read=read_rows,
+        quarantine=quarantine_rows,
+        written=written_rows,
+        exact_duplicates=exact_duplicates,
+        key_conflicts=key_conflicts,
+        duplicates=exact_duplicates + key_conflicts,
+    )
     if counts["key_conflicts"]:
         log.warning("bronze/%s: %d versiones descartadas por conflicto de clave %s (gana la última)",
                     source.name, counts["key_conflicts"], source.natural_key)
@@ -85,7 +112,7 @@ def ingest_source(spark: SparkSession, settings: Settings, source: Source, inges
     return counts
 
 
-def run(spark: SparkSession, settings: Settings) -> dict[str, dict]:
+def run(spark: SparkSession, settings: Settings) -> dict[str, BronzeBatchCounts]:
     """Paso ``bronze_batch``: ingesta todas las fuentes CSV y devuelve sus conteos por nombre."""
     ingest_ts = lit(datetime.now(timezone.utc)).cast("timestamp")
     return {name: ingest_source(spark, settings, source, ingest_ts) for name, source in SOURCES.items()}

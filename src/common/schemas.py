@@ -3,6 +3,7 @@ from dataclasses import dataclass
 
 from pyspark.sql.types import (
     BooleanType,
+    DataType,
     DateType,
     DoubleType,
     IntegerType,
@@ -36,7 +37,7 @@ class Source:
         return StructType([*self.schema.fields, StructField(CORRUPT_RECORD_COL, StringType())])
 
 
-def _fields(*field_specs: tuple[str, object]) -> StructType:
+def _fields(*field_specs: tuple[str, DataType]) -> StructType:
     """Arma un StructType nullable a partir de pares (nombre, tipo)."""
     return StructType(
         [StructField(name, data_type, nullable=True) for name, data_type in field_specs]

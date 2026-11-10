@@ -1,8 +1,8 @@
 """Sesiones CQL contra la Cassandra local o AstraDB."""
 import atexit
 import logging
+from collections.abc import Iterator
 from contextlib import contextmanager
-from typing import Generator
 
 from cassandra import ConsistencyLevel
 from cassandra.auth import PlainTextAuthProvider
@@ -18,7 +18,7 @@ log = logging.getLogger(__name__)
 _shared_sessions: dict[Settings, Session] = {}
 
 
-def _default_profile(local_dc: str | None) -> dict:
+def _default_profile(local_dc: str | None) -> dict[object, ExecutionProfile]:
     """Perfil de ejecución por defecto: token-aware, LOCAL_QUORUM y timeout de 30 s."""
     return {
         EXEC_PROFILE_DEFAULT: ExecutionProfile(
@@ -81,7 +81,7 @@ def get_session(settings: Settings | None = None) -> Session:
 
 
 @contextmanager
-def session_scope(settings: Settings | None = None) -> Generator[Session, None, None]:
+def session_scope(settings: Settings | None = None) -> Iterator[Session]:
     """Abre una sesión CQL y cierra su cluster al salir del bloque ``with``."""
     session = get_session(settings)
     try:

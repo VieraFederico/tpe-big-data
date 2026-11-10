@@ -4,12 +4,13 @@ import csv
 import logging
 import sys
 import time
-from collections.abc import Callable
+from collections.abc import Callable, Mapping
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
-from typing import Any, Mapping
+from typing import Any
 
+from cassandra.cluster import Session
 from cassandra.query import SimpleStatement
 
 from src.config import REPO_ROOT, Settings, load_settings
@@ -38,14 +39,14 @@ class QueryResult:
     cql: str
     params: Mapping[str, Any]
     columns: list[str]
-    rows: list[tuple]
+    rows: list[tuple[Any, ...]]
     total_rows: int
     seconds: float
     executed_at: str = field(default_factory=lambda: datetime.now(timezone.utc).isoformat(timespec="seconds"))
 
 
 def run_query(
-    session,
+    session: Session,
     cql: str,
     params: Mapping[str, Any] | None = None,
     *,
@@ -75,7 +76,8 @@ def run_query(
     started = time.monotonic()
     result_set = session.execute(statement, params or None)
     columns = list(result_set.column_names or [])
-    rows, total_rows = [], 0
+    rows: list[tuple[Any, ...]] = []
+    total_rows = 0
     for row in result_set:
         total_rows += 1
         if len(rows) < max_rows:
@@ -124,7 +126,7 @@ def save_evidence(
     return txt_path
 
 
-def format_table(columns: list[str], rows: list[tuple], max_rows: int = 50) -> str:
+def format_table(columns: list[str], rows: list[tuple[Any, ...]], max_rows: int = 50) -> str:
     """Formatea filas como una tabla de texto con columnas alineadas.
 
     Args:
@@ -205,7 +207,7 @@ def main(argv: list[str] | None = None) -> int:
     parser.add_argument("--max-rows", type=int, default=1000)
     arguments = parser.parse_args(argv)
 
-    params = {}
+    params: dict[str, Any] = {}
     for item in arguments.param:
         try:
             key, value = parse_param(item)

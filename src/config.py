@@ -3,6 +3,7 @@ import os
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
+from enum import StrEnum
 from pathlib import Path
 from typing import Literal, cast, get_args
 
@@ -19,10 +20,24 @@ except ImportError:
 ServingTarget = Literal["local", "astra"]
 VALID_TARGETS: frozenset[str] = frozenset(get_args(ServingTarget))
 
+# Formato de timestamp para ids de corrida y nombres de archivo: compacto y ordenable.
+RUN_TIMESTAMP_FORMAT = "%Y%m%dT%H%M%SZ"
+
+
+class Zone(StrEnum):
+    """Zonas del lake; cada una es una carpeta bajo ``datalake_path``."""
+
+    LANDING = "landing"
+    BRONZE = "bronze"
+    SILVER = "silver"
+    GOLD = "gold"
+    QUARANTINE = "quarantine"
+    CHECKPOINTS = "checkpoints"
+
 
 def new_run_id() -> str:
     """Genera un id de corrida ordenable por fecha, p. ej. ``20261110T153000Z-a1b2c3``."""
-    timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    timestamp = datetime.now(timezone.utc).strftime(RUN_TIMESTAMP_FORMAT)
     return f"{timestamp}-{uuid.uuid4().hex[:6]}"
 
 
@@ -52,8 +67,8 @@ class Settings:
     astra_bundle_path: str | None
     run_id: str = field(default_factory=new_run_id)
 
-    def zone_path(self, zone: str) -> str:
-        """Ruta de una zona del lake, p. ej. zone_path('bronze')."""
+    def zone_path(self, zone: Zone) -> str:
+        """Ruta de una zona del lake, p. ej. ``zone_path(Zone.BRONZE)``."""
         return f"{self.datalake_path.rstrip('/')}/{zone}"
 
 

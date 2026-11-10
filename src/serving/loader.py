@@ -15,6 +15,7 @@ from src.config import Settings, load_settings
 log = logging.getLogger(__name__)
 
 IDENTIFIER_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
+DEFAULT_WRITE_CONCURRENCY = 32
 
 
 @dataclass(frozen=True)
@@ -63,7 +64,8 @@ def write_dataframe(
         df: DataFrame cuyas columnas coinciden con las de la tabla.
         table: Tabla destino, dentro del keyspace de ``settings``.
         settings: Configuración; si no se pasa se lee del entorno.
-        concurrency: Requests en vuelo por partición (default: CASSANDRA_WRITE_CONCURRENCY o 32).
+        concurrency: Requests en vuelo por partición (default: CASSANDRA_WRITE_CONCURRENCY
+            o DEFAULT_WRITE_CONCURRENCY).
         batch_rows: Filas que se mandan juntas en cada tanda concurrente.
         fail_on_error: Si es True, falla cuando alguna fila no se pudo escribir.
 
@@ -84,7 +86,7 @@ def write_dataframe(
         settings=resolved_settings,
         cql=f"INSERT INTO {table} ({', '.join(columns)}) VALUES ({', '.join('?' * len(columns))})",
         columns=columns,
-        concurrency=concurrency or int(os.getenv("CASSANDRA_WRITE_CONCURRENCY", "32")),
+        concurrency=concurrency or int(os.getenv("CASSANDRA_WRITE_CONCURRENCY", DEFAULT_WRITE_CONCURRENCY)),
         batch_rows=batch_rows,
     )
 

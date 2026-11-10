@@ -3,7 +3,7 @@ from dataclasses import replace
 
 import pytest
 
-from src.config import load_settings
+from src.config import Zone, load_settings
 from src.serving.astra_bundle import database_id_from_endpoint, ensure_bundle
 
 DB_ID = "0123abcd-0123-4567-89ab-0123456789ab"
@@ -20,13 +20,13 @@ def test_defaults_locales():
     loaded_settings = load_settings()
 
     assert loaded_settings.serving_target == "local"
-    assert loaded_settings.zone_path("bronze").endswith("/bronze")
+    assert loaded_settings.zone_path(Zone.BRONZE).endswith("/bronze")
 
 
 def test_zone_path_ignora_barra_final(monkeypatch):
     monkeypatch.setenv("DATALAKE_PATH", "/lake/")
 
-    assert load_settings().zone_path("gold") == "/lake/gold"
+    assert load_settings().zone_path(Zone.GOLD) == "/lake/gold"
 
 
 def test_target_invalido(monkeypatch):

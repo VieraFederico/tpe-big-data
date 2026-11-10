@@ -1,7 +1,7 @@
 import pytest
 from pyspark.sql import SparkSession
 
-from src.config import Settings
+from src.config import Settings, Zone
 
 
 @pytest.fixture(scope="session")
@@ -23,7 +23,7 @@ def spark():
 @pytest.fixture
 def settings(tmp_path) -> Settings:
     """Lake temporario por test, con landing vacío."""
-    (tmp_path / "landing").mkdir()
+    (tmp_path / Zone.LANDING).mkdir()
     return Settings(
         datalake_path=str(tmp_path),
         serving_target="local",

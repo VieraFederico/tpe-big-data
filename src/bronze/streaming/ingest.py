@@ -11,7 +11,7 @@ from src.common.columns import EVENT_DATE, EVENT_TS, with_technical_columns
 from src.common.lake import dataset_storage_stats, read_dataset, write_dataset
 from src.common.readers import read_usage_events_stream
 from src.common.schemas import CORRUPT_RECORD_COL, USAGE_EVENTS
-from src.config import Settings
+from src.config import Settings, Zone
 from src.quality.catalog import bronze_event_rules
 from src.quality.rules import split_by_rules
 
@@ -68,9 +68,9 @@ def write_micro_batch(settings: Settings) -> Callable[[DataFrame, int], None]:
         batch_df.persist()
         try:
             valid, quarantine = split_by_rules(batch_df, bronze_event_rules())
-            write_dataset(valid.drop(CORRUPT_RECORD_COL), settings, "bronze", USAGE_EVENTS.name,
+            write_dataset(valid.drop(CORRUPT_RECORD_COL), settings, Zone.BRONZE, USAGE_EVENTS.name,
                           partition_by=(EVENT_DATE,), mode="append", use_rebalance=False)
-            write_dataset(quarantine, settings, "quarantine", USAGE_EVENTS.name,
+            write_dataset(quarantine, settings, Zone.QUARANTINE, USAGE_EVENTS.name,
                           mode="append", use_rebalance=False)
             log.info("Micro-lote %d: %d a bronze, %d a quarantine",
                      batch_id, valid.count(), quarantine.count())
@@ -80,7 +80,7 @@ def write_micro_batch(settings: Settings) -> Callable[[DataFrame, int], None]:
     return _write
 
 
-def _count_or_zero(spark: SparkSession, settings: Settings, zone: str) -> int:
+def _count_or_zero(spark: SparkSession, settings: Settings, zone: Zone) -> int:
     """Filas de eventos escritas en la zona; 0 si todavía no existe el dataset."""
     try:
         return read_dataset(spark, settings, zone, USAGE_EVENTS.name).count()
@@ -101,7 +101,7 @@ def run(spark: SparkSession, settings: Settings) -> BronzeStreamStats:
     query = (
         build_stream(spark, settings)
         .writeStream.foreachBatch(write_micro_batch(settings))
-        .option("checkpointLocation", f"{settings.zone_path('checkpoints')}/bronze_{USAGE_EVENTS.name}")
+        .option("checkpointLocation", f"{settings.zone_path(Zone.CHECKPOINTS)}/{Zone.BRONZE}_{USAGE_EVENTS.name}")
         .trigger(availableNow=True)
         .start()
     )
@@ -123,10 +123,10 @@ def run(spark: SparkSession, settings: Settings) -> BronzeStreamStats:
             state_operator.get("customMetrics", {}).get("numDroppedDuplicateRows", 0)
             for state_operator in state_operators
         ),
-        "bronze_total": _count_or_zero(spark, settings, "bronze"),
-        "quarantine_total": _count_or_zero(spark, settings, "quarantine"),
+        "bronze_total": _count_or_zero(spark, settings, Zone.BRONZE),
+        "quarantine_total": _count_or_zero(spark, settings, Zone.QUARANTINE),
     }
     log.info("bronze/%s: %s", USAGE_EVENTS.name, stats)
-    for zone in ("bronze", "quarantine"):
+    for zone in (Zone.BRONZE, Zone.QUARANTINE):
         log.info("%s/%s (en disco) -> %s", zone, USAGE_EVENTS.name, dataset_storage_stats(settings, zone, USAGE_EVENTS.name))
     return stats

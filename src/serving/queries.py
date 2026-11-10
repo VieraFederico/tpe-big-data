@@ -18,6 +18,8 @@ from src.config import REPO_ROOT, Settings, load_settings
 log = logging.getLogger(__name__)
 
 DEFAULT_EVIDENCE_DIR = REPO_ROOT / "evidence"
+# Filas que se conservan del resultado (el .csv); el total igual se cuenta completo.
+DEFAULT_MAX_ROWS = 1000
 
 
 @dataclass
@@ -52,7 +54,7 @@ def run_query(
     *,
     name: str = "query",
     fetch_size: int = 500,
-    max_rows: int = 1000,
+    max_rows: int = DEFAULT_MAX_ROWS,
 ) -> QueryResult:
     """Ejecuta una consulta CQL paginada y junta su resultado.
 
@@ -204,7 +206,7 @@ def main(argv: list[str] | None = None) -> int:
     )
     parser.add_argument("--name", help="Nombre de la evidencia (default: nombre del archivo)")
     parser.add_argument("--evidence-dir", type=Path, default=DEFAULT_EVIDENCE_DIR)
-    parser.add_argument("--max-rows", type=int, default=1000)
+    parser.add_argument("--max-rows", type=int, default=DEFAULT_MAX_ROWS)
     arguments = parser.parse_args(argv)
 
     params: dict[str, Any] = {}

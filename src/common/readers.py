@@ -7,7 +7,7 @@ a quarantine sin perder el dato.
 from pyspark.sql import DataFrame, SparkSession
 
 from src.common.schemas import CORRUPT_RECORD_COL, USAGE_EVENTS, Source
-from src.config import Settings
+from src.config import Settings, Zone
 
 
 def read_csv_source(spark: SparkSession, source: Source, settings: Settings) -> DataFrame:
@@ -18,7 +18,7 @@ def read_csv_source(spark: SparkSession, source: Source, settings: Settings) -> 
         .option("mode", "PERMISSIVE")
         .option("columnNameOfCorruptRecord", CORRUPT_RECORD_COL)
         .option("escape", '"')
-        .csv(f"{settings.zone_path('landing')}/{source.path}")
+        .csv(f"{settings.zone_path(Zone.LANDING)}/{source.path}")
     )
 
 
@@ -46,4 +46,4 @@ def read_usage_events_stream(
 
 
 def _events_glob(settings: Settings) -> str:
-    return f"{settings.zone_path('landing')}/{USAGE_EVENTS.path}/*.jsonl"
+    return f"{settings.zone_path(Zone.LANDING)}/{USAGE_EVENTS.path}/*.jsonl"

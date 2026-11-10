@@ -15,16 +15,24 @@ from src.serving.astra_bundle import ensure_bundle
 
 log = logging.getLogger(__name__)
 
+REQUEST_TIMEOUT_SECONDS = 30
+# Astra acepta hasta la v4 del protocolo nativo; la Cassandra local soporta la v5.
+ASTRA_PROTOCOL_VERSION = 4
+LOCAL_PROTOCOL_VERSION = 5
+# Nombre del datacenter por defecto en la imagen oficial de Cassandra.
+LOCAL_DATACENTER = "datacenter1"
+LOCAL_REPLICATION_FACTOR = 1
+
 _shared_sessions: dict[Settings, Session] = {}
 
 
 def _default_profile(local_dc: str | None) -> dict[object, ExecutionProfile]:
-    """Perfil de ejecución por defecto: token-aware, LOCAL_QUORUM y timeout de 30 s."""
+    """Perfil de ejecución por defecto: token-aware, LOCAL_QUORUM y REQUEST_TIMEOUT_SECONDS."""
     return {
         EXEC_PROFILE_DEFAULT: ExecutionProfile(
             load_balancing_policy=TokenAwarePolicy(DCAwareRoundRobinPolicy(local_dc=local_dc)),
             consistency_level=ConsistencyLevel.LOCAL_QUORUM,
-            request_timeout=30,
+            request_timeout=REQUEST_TIMEOUT_SECONDS,
         )
     }
 
@@ -45,15 +53,15 @@ def get_session(settings: Settings | None = None) -> Session:
         cluster = Cluster(
             cloud={"secure_connect_bundle": ensure_bundle(resolved_settings)},
             auth_provider=PlainTextAuthProvider("token", resolved_settings.astra_token),
-            protocol_version=4,
+            protocol_version=ASTRA_PROTOCOL_VERSION,
             execution_profiles=_default_profile(local_dc=None),
         )
     else:
         cluster = Cluster(
             [resolved_settings.cassandra_host],
             port=resolved_settings.cassandra_port,
-            protocol_version=5,
-            execution_profiles=_default_profile(local_dc="datacenter1"),
+            protocol_version=LOCAL_PROTOCOL_VERSION,
+            execution_profiles=_default_profile(local_dc=LOCAL_DATACENTER),
         )
 
     try:
@@ -61,7 +69,8 @@ def get_session(settings: Settings | None = None) -> Session:
         if not is_astra:
             session.execute(
                 f"CREATE KEYSPACE IF NOT EXISTS {resolved_settings.keyspace} "
-                "WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}"
+                "WITH replication = {'class': 'SimpleStrategy', "
+                f"'replication_factor': {LOCAL_REPLICATION_FACTOR}}}"
             )
         session.set_keyspace(resolved_settings.keyspace)
     except InvalidRequest as error:

@@ -7,6 +7,7 @@ from pyspark.sql.functions import col
 from src.bronze.streaming import ingest
 from src.common.columns import RUN_ID
 from src.common.lake import read_dataset
+from src.config import Zone
 from src.common.schemas import USAGE_EVENTS
 from src.quality.rules import RULE_ID_COL
 
@@ -20,7 +21,7 @@ def _event(event_id, timestamp="2025-08-01T10:00:00Z", **extra):
 
 
 def _write_part(settings, name, lines):
-    folder = Path(settings.zone_path("landing"), USAGE_EVENTS.path)
+    folder = Path(settings.zone_path(Zone.LANDING), USAGE_EVENTS.path)
     folder.mkdir(parents=True, exist_ok=True)
     (folder / name).write_text(
         "\n".join(line if isinstance(line, str) else json.dumps(line) for line in lines) + "\n",
@@ -29,7 +30,7 @@ def _write_part(settings, name, lines):
 
 
 def _bronze_ids(spark, settings):
-    return sorted(row.event_id for row in read_dataset(spark, settings, "bronze", USAGE_EVENTS.name).collect())
+    return sorted(row.event_id for row in read_dataset(spark, settings, Zone.BRONZE, USAGE_EVENTS.name).collect())
 
 
 def test_dedupe_y_quarantine_en_un_micro_lote(spark, settings):
@@ -45,7 +46,7 @@ def test_dedupe_y_quarantine_en_un_micro_lote(spark, settings):
     assert _bronze_ids(spark, settings) == ["e1", "e2"]
     assert stats["dropped_duplicates"] == 1
     assert stats["bronze_total"] == 2
-    quarantine = read_dataset(spark, settings, "quarantine", USAGE_EVENTS.name)
+    quarantine = read_dataset(spark, settings, Zone.QUARANTINE, USAGE_EVENTS.name)
     assert [row[RULE_ID_COL] for row in quarantine.collect()] == ["BRZ_PARSE"]
 
 
@@ -57,7 +58,7 @@ def test_esquema_v2_conserva_campos_nuevos(spark, settings):
 
     ingest.run(spark, settings)
 
-    row_by_event_id = {row.event_id: row for row in read_dataset(spark, settings, "bronze", USAGE_EVENTS.name).collect()}
+    row_by_event_id = {row.event_id: row for row in read_dataset(spark, settings, Zone.BRONZE, USAGE_EVENTS.name).collect()}
     assert row_by_event_id["v1"].genai_tokens is None and row_by_event_id["v1"].carbon_kg is None
     assert row_by_event_id["v2"].genai_tokens == 1000 and row_by_event_id["v2"].carbon_kg == 0.2
 
@@ -88,7 +89,7 @@ def test_timestamp_invalido_o_nulo_va_a_quarantine(spark, settings):
     ingest.run(spark, settings)
 
     assert _bronze_ids(spark, settings) == ["ok"]
-    quarantine = read_dataset(spark, settings, "quarantine", USAGE_EVENTS.name)
+    quarantine = read_dataset(spark, settings, Zone.QUARANTINE, USAGE_EVENTS.name)
     rules_by_event = {row.event_id: row[RULE_ID_COL] for row in quarantine.collect()}
     assert rules_by_event == {"fecha_rota": "BRZ_BAD_TS", "sin_fecha": "BRZ_BAD_TS", None: "BRZ_PARSE"}
 
@@ -103,7 +104,7 @@ def test_evento_tardio_se_descarta_por_watermark(spark, settings):
 
     assert stats["dropped_by_watermark"] == 1
     assert _bronze_ids(spark, settings) == ["nuevo"]
-    assert read_dataset(spark, settings, "bronze", USAGE_EVENTS.name).filter(col("event_id") == "viejo").count() == 0
+    assert read_dataset(spark, settings, Zone.BRONZE, USAGE_EVENTS.name).filter(col("event_id") == "viejo").count() == 0
 
 
 def test_cada_fila_guarda_el_run_id_de_la_corrida_que_la_escribio(spark, settings):
@@ -113,5 +114,5 @@ def test_cada_fila_guarda_el_run_id_de_la_corrida_que_la_escribio(spark, setting
     _write_part(settings, "events_part_0001.jsonl", [_event("e2")])
     ingest.run(spark, replace(settings, run_id="corrida_b"))
 
-    bronze = read_dataset(spark, settings, "bronze", USAGE_EVENTS.name)
+    bronze = read_dataset(spark, settings, Zone.BRONZE, USAGE_EVENTS.name)
     assert {row.event_id: row[RUN_ID] for row in bronze.collect()} == {"e1": "corrida_a", "e2": "corrida_b"}

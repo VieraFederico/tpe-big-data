@@ -10,7 +10,7 @@ from src.common.columns import SOURCE_FILE, with_technical_columns
 from src.common.lake import dataset_storage_stats, write_dataset
 from src.common.readers import read_csv_source
 from src.common.schemas import CORRUPT_RECORD_COL, SOURCES, Source
-from src.config import Settings
+from src.config import Settings, Zone
 from src.quality.catalog import bronze_structural_rules
 from src.quality.rules import split_by_rules
 
@@ -82,8 +82,8 @@ def ingest_source(
         valid, quarantine = split_by_rules(raw, bronze_structural_rules(source))
         bronze = dedupe_last_wins(valid, source.natural_key).drop(CORRUPT_RECORD_COL, ROW_ORDER_COL)
 
-        write_dataset(bronze, settings, "bronze", source.name)
-        write_dataset(quarantine.drop(ROW_ORDER_COL), settings, "quarantine", source.name)
+        write_dataset(bronze, settings, Zone.BRONZE, source.name)
+        write_dataset(quarantine.drop(ROW_ORDER_COL), settings, Zone.QUARANTINE, source.name)
 
         data_cols = [field.name for field in source.schema.fields]
         valid_rows = valid.count()
@@ -107,7 +107,7 @@ def ingest_source(
         log.warning("bronze/%s: %d versiones descartadas por conflicto de clave %s (gana la última)",
                     source.name, counts["key_conflicts"], source.natural_key)
     log.info("bronze/%s: %s", source.name, counts)
-    for zone in ("bronze", "quarantine"):
+    for zone in (Zone.BRONZE, Zone.QUARANTINE):
         log.info("%s/%s (en disco) -> %s", zone, source.name, dataset_storage_stats(settings, zone, source.name))
     return counts
 

@@ -5,10 +5,12 @@ from pathlib import Path
 from pyspark.sql import DataFrame, SparkSession
 
 from src.common.columns import INGEST_DATE
-from src.config import Settings
+from src.config import Settings, Zone
+
+BYTES_PER_MB = 1_000_000
 
 
-def dataset_path(settings: Settings, zone: str, dataset: str) -> str:
+def dataset_path(settings: Settings, zone: Zone, dataset: str) -> str:
     """Ruta de un dataset dentro de una zona del lake, p. ej. ``<lake>/bronze/users``."""
     return f"{settings.zone_path(zone)}/{dataset}"
 
@@ -35,7 +37,7 @@ def rebalance_by(df: DataFrame, columns: tuple[str, ...]) -> DataFrame:
 def write_dataset(
     df: DataFrame,
     settings: Settings,
-    zone: str,
+    zone: Zone,
     dataset: str,
     partition_by: tuple[str, ...] = (INGEST_DATE,),
     mode: str = "overwrite",
@@ -65,7 +67,7 @@ def write_dataset(
     return path
 
 
-def read_dataset(spark: SparkSession, settings: Settings, zone: str, dataset: str) -> DataFrame:
+def read_dataset(spark: SparkSession, settings: Settings, zone: Zone, dataset: str) -> DataFrame:
     """Lee un dataset parquet de una zona del lake."""
     return spark.read.parquet(dataset_path(settings, zone, dataset))
 
@@ -89,10 +91,10 @@ class StorageStats:
     def __str__(self) -> str:
         average_bytes_per_file = self.bytes / self.files if self.files else 0
         return (f"{self.path} | {self.partitions} particiones | {self.files} archivos | "
-                f"{self.bytes / 1e6:.1f} MB (prom. {average_bytes_per_file / 1e6:.2f} MB/archivo)")
+                f"{self.bytes / BYTES_PER_MB:.1f} MB (prom. {average_bytes_per_file / BYTES_PER_MB:.2f} MB/archivo)")
 
 
-def dataset_storage_stats(settings: Settings, zone: str, dataset: str) -> StorageStats:
+def dataset_storage_stats(settings: Settings, zone: Zone, dataset: str) -> StorageStats:
     """Cuenta particiones, archivos y bytes de un dataset local; da ceros si no existe."""
     path = dataset_path(settings, zone, dataset)
     parquet_files = list(Path(path).rglob("*.parquet")) if Path(path).is_dir() else []

@@ -4,7 +4,7 @@ import os
 from datetime import datetime, timezone
 from pathlib import Path
 
-from src.config import REPO_ROOT
+from src.config import REPO_ROOT, RUN_TIMESTAMP_FORMAT
 
 FORMAT = "%(asctime)s %(levelname)s %(name)s - %(message)s"
 
@@ -24,7 +24,7 @@ def setup_logging(run_name: str = "pipeline", log_dir: Path | None = None, run_i
     """
     directory = log_dir or Path(os.getenv("LOG_DIR", REPO_ROOT / "evidence" / "logs"))
     directory.mkdir(parents=True, exist_ok=True)
-    suffix = run_id or datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
+    suffix = run_id or datetime.now(timezone.utc).strftime(RUN_TIMESTAMP_FORMAT)
     log_file = directory / f"{run_name}_{suffix}.log"
 
     logging.basicConfig(

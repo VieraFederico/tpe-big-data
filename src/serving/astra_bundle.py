@@ -15,6 +15,9 @@ log = logging.getLogger(__name__)
 DEVOPS_API = "https://api.astra.datastax.com/v2/databases/{db_id}/secureBundleURL"
 # https://<db_id (uuid)>-<region>.apps.astra.datastax.com
 ENDPOINT_RE = re.compile(r"^https://([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})-")
+DEVOPS_API_TIMEOUT_SECONDS = 30
+BUNDLE_DOWNLOAD_TIMEOUT_SECONDS = 60
+AUTH_ERROR_STATUS_CODES = (401, 403)
 
 
 def database_id_from_endpoint(endpoint: str) -> str:
@@ -73,10 +76,11 @@ def _request_download_url(db_id: str, token: str) -> str:
         headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
     )
     try:
-        with urllib.request.urlopen(request, timeout=30) as response:
+        with urllib.request.urlopen(request, timeout=DEVOPS_API_TIMEOUT_SECONDS) as response:
             body = json.load(response)
     except urllib.error.HTTPError as error:
-        hint = " (token sin permisos sobre la base o inválido)" if error.code in (401, 403) else ""
+        is_auth_error = error.code in AUTH_ERROR_STATUS_CODES
+        hint = " (token sin permisos sobre la base o inválido)" if is_auth_error else ""
         raise RuntimeError(f"La DevOps API de Astra respondió {error.code}{hint}") from error
     return body["downloadURL"]
 
@@ -88,7 +92,7 @@ def _download(url: str, target: Path) -> None:
     try:
         with (
             os.fdopen(temp_file_descriptor, "wb") as temp_file,
-            urllib.request.urlopen(url, timeout=60) as response,
+            urllib.request.urlopen(url, timeout=BUNDLE_DOWNLOAD_TIMEOUT_SECONDS) as response,
         ):
             temp_file.write(response.read())
         os.replace(temp_path, target)

@@ -36,10 +36,10 @@ def get_spark(
         **SEMANTIC_CONFIG,
     }
     builder = SparkSession.builder.appName(app_name).master(
-        master or os.getenv("SPARK_MASTER", "local[*]")
+        master if master else os.environ.get("SPARK_MASTER", "local[*]")
     )
     for key, value in config.items():
         builder = builder.config(key, value)
     spark = builder.getOrCreate()
-    spark.sparkContext.setLogLevel(log_level or os.getenv("SPARK_LOG_LEVEL", "WARN"))
+    spark.sparkContext.setLogLevel(log_level if log_level else os.environ.get("SPARK_LOG_LEVEL", "WARN"))
     return spark

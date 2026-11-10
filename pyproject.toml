@@ -1,0 +1,38 @@
+# Configuración de las herramientas de calidad.
+[project]
+name = "tpe-big-data"
+version = "0.1.0"
+description = "Pipeline Landing -> Bronze -> Silver -> Gold -> Serving (Spark + Cassandra/AstraDB)"
+requires-python = ">=3.11"
+
+[tool.ruff]
+line-length = 99
+target-version = "py311"
+extend-exclude = ["notebooks"]
+
+[tool.ruff.lint]
+select = [
+    "E",   # pycodestyle
+    "W",   # pycodestyle warnings
+    "F",   # pyflakes
+    "I",   # orden de imports
+    "N",   # nombres PEP 8
+    "B",   # bugbear
+    "C4",  # comprehensions
+    "UP",  # sintaxis moderna
+    "SIM", # simplificaciones
+]
+ignore = ["E501"]  # el largo de línea lo resuelve ruff format
+
+[tool.ruff.lint.isort]
+known-first-party = ["src"]
+
+[tool.mypy]
+python_version = "3.11"
+files = ["src"]
+strict = true
+ignore_missing_imports = true  # cassandra-driver no trae tipos
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+pythonpath = ["."]

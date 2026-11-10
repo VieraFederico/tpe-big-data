@@ -97,6 +97,20 @@ def test_storage_stats_reporta_ruta_archivos_y_tamano(spark, settings):
     assert stats.files >= 1 and stats.bytes > 0
 
 
+def test_un_archivo_por_particion_aunque_haya_varias_tareas(spark, settings):
+    # Con 8 particiones de shuffle, el dedupe reparte las filas en varias tareas;
+    # sin el repartition de write_dataset cada tarea escribiría su propio archivo.
+    original = spark.conf.get("spark.sql.shuffle.partitions")
+    spark.conf.set("spark.sql.shuffle.partitions", "8")
+    try:
+        _ingest(spark, settings)
+    finally:
+        spark.conf.set("spark.sql.shuffle.partitions", original)
+
+    stats = dataset_storage_stats(settings, "bronze", SOURCE.name)
+    assert (stats.partitions, stats.files) == (1, 1)
+
+
 def test_storage_stats_inexistente_da_ceros(settings):
     stats = dataset_storage_stats(settings, "bronze", "no_existe")
 

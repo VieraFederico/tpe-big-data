@@ -3,6 +3,7 @@ from pathlib import Path
 
 from pyspark.sql import DataFrame, SparkSession
 
+from src.common.columns import INGEST_DATE
 from src.config import Settings
 
 def dataset_path(settings: Settings, zone: str, dataset: str) -> str:
@@ -13,11 +14,13 @@ def write_dataset(
     settings: Settings,
     zone: str,
     dataset: str,
-    partition_by: tuple[str, ...] = ("ingest_date",),
+    partition_by: tuple[str, ...] = (INGEST_DATE,),
     mode: str = "overwrite",
+    use_rebalance: bool = True,
 ) -> str:
     path = dataset_path(settings, zone, dataset)
-    df.write.mode(mode).partitionBy(*partition_by).parquet(path)
+    distributed = df.hint("rebalance", *partition_by) if use_rebalance else df.repartition(*partition_by)
+    distributed.write.mode(mode).partitionBy(*partition_by).parquet(path)
     return path
 
 

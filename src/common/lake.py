@@ -26,7 +26,7 @@ def read_dataset(spark: SparkSession, settings: Settings, zone: str, dataset: st
 
 
 @dataclass(frozen=True)
-class DatasetStats:
+class StorageStats:
     path: str
     partitions: int
     files: int
@@ -38,10 +38,10 @@ class DatasetStats:
                 f"{self.bytes / 1e6:.1f} MB (prom. {avg / 1e6:.2f} MB/archivo)")
 
 
-def describe_dataset(settings: Settings, zone: str, dataset: str) -> DatasetStats:
+def dataset_storage_stats(settings: Settings, zone: str, dataset: str) -> StorageStats:
     path = dataset_path(settings, zone, dataset)
     files = list(Path(path).rglob("*.parquet")) if Path(path).is_dir() else []
-    return DatasetStats(
+    return StorageStats(
         path=path,
         partitions=len({f.parent for f in files}),
         files=len(files),

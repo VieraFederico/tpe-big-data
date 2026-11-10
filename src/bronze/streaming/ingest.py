@@ -5,7 +5,7 @@ from pyspark.errors import AnalysisException
 from pyspark.sql import functions as F
 
 from src.common.columns import with_technical_columns
-from src.common.lake import describe_dataset, read_dataset, write_dataset
+from src.common.lake import dataset_storage_stats, read_dataset, write_dataset
 from src.common.readers import read_usage_events_stream
 from src.common.schemas import CORRUPT_RECORD_COL, USAGE_EVENTS
 from src.config import Settings
@@ -76,5 +76,5 @@ def run(spark: SparkSession, settings: Settings) -> dict:
     }
     log.info("bronze/%s: %s", USAGE_EVENTS.name, stats)
     for zone in ("bronze", "quarantine"):
-        log.info("%s/%s -> %s", zone, USAGE_EVENTS.name, describe_dataset(settings, zone, USAGE_EVENTS.name))
+        log.info("%s/%s (en disco) -> %s", zone, USAGE_EVENTS.name, dataset_storage_stats(settings, zone, USAGE_EVENTS.name))
     return stats

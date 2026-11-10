@@ -12,7 +12,7 @@ from pyspark.sql import SparkSession
 
 from src.common.logging_setup import setup_logging
 from src.common.spark import get_spark
-from src.config import Settings, load_settings, new_run_id
+from src.config import Settings, load_env_file, load_settings, new_run_id
 
 StepRunner = Callable[[SparkSession, Settings], object]
 
@@ -83,6 +83,7 @@ def run_steps(steps: list[str], run_id: str | None = None) -> None:
 
 def main(argv: list[str] | None = None) -> int:
     """CLI del pipeline. Devuelve el código de salida (0 ok, 1 si falló algún paso)."""
+    load_env_file()
     parser = argparse.ArgumentParser(description="Ejecuta el pipeline Landing -> Serving.")
     parser.add_argument(
         "--steps", help=f"Pasos separados por coma (default: todos). Opciones: {','.join(STEPS)}"

@@ -3,7 +3,7 @@ from dataclasses import replace
 
 import pytest
 
-from src.config import Zone, load_settings
+from src.config import Zone, load_env_file, load_settings
 from src.serving.astra_bundle import database_id_from_endpoint, ensure_bundle
 
 DB_ID = "0123abcd-0123-4567-89ab-0123456789ab"
@@ -105,3 +105,27 @@ def test_run_id_se_genera_si_no_se_pasa():
 
 def test_run_id_explicito_se_respeta():
     assert load_settings(run_id="corrida_x").run_id == "corrida_x"
+
+
+def test_load_env_file_carga_el_archivo(monkeypatch, tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DATALAKE_PATH=/desde/archivo\n", encoding="utf-8")
+    monkeypatch.setenv("ENV_FILE", str(env_file))
+    # setenv + delenv: la variable arranca ausente y monkeypatch la borra al terminar.
+    monkeypatch.setenv("DATALAKE_PATH", "temporal")
+    monkeypatch.delenv("DATALAKE_PATH")
+
+    load_env_file()
+
+    assert load_settings().datalake_path == "/desde/archivo"
+
+
+def test_load_env_file_no_pisa_variables_existentes(monkeypatch, tmp_path):
+    env_file = tmp_path / ".env"
+    env_file.write_text("DATALAKE_PATH=/desde/archivo\n", encoding="utf-8")
+    monkeypatch.setenv("ENV_FILE", str(env_file))
+    monkeypatch.setenv("DATALAKE_PATH", "/desde/entorno")
+
+    load_env_file()
+
+    assert load_settings().datalake_path == "/desde/entorno"

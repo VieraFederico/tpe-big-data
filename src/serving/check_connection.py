@@ -4,7 +4,7 @@ import logging
 import sys
 
 from src.common.logging_setup import setup_logging
-from src.config import load_settings
+from src.config import load_env_file, load_settings
 from src.serving.cassandra_client import session_scope
 
 log = logging.getLogger("check_connection")
@@ -12,6 +12,7 @@ log = logging.getLogger("check_connection")
 
 def main() -> int:
     """Se conecta al target configurado y loguea la versión y las tablas existentes."""
+    load_env_file()
     settings = load_settings()
     with session_scope(settings) as session:
         version = session.execute("SELECT release_version FROM system.local").one().release_version

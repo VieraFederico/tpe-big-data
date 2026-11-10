@@ -14,9 +14,11 @@ from typing import Any
 from cassandra.cluster import Session
 from cassandra.query import SimpleStatement
 
-from src.config import REPO_ROOT, Settings, load_settings
+from src.common.logging_setup import setup_logging
+from src.config import REPO_ROOT, Settings, load_env_file, load_settings
+from src.serving.cassandra_client import session_scope
 
-log = logging.getLogger(__name__)
+log = logging.getLogger("queries")
 
 DEFAULT_EVIDENCE_DIR = REPO_ROOT / "evidence"
 # Filas que se conservan del resultado (el .csv); el total igual se cuenta completo.
@@ -226,8 +228,7 @@ def main(argv: list[str] | None = None) -> int:
             parser.error(str(error))
         params[key] = value
 
-    from src.serving.cassandra_client import session_scope
-
+    load_env_file()
     settings = load_settings()
     with session_scope(settings) as session:
         result = run_query(
@@ -243,7 +244,5 @@ def main(argv: list[str] | None = None) -> int:
 
 
 if __name__ == "__main__":
-    from src.common.logging_setup import setup_logging
-
     setup_logging("queries")
     sys.exit(main())

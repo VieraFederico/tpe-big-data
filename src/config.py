@@ -8,15 +8,9 @@ from enum import StrEnum
 from pathlib import Path
 from typing import Literal, cast, get_args
 
+from dotenv import load_dotenv
+
 REPO_ROOT = Path(__file__).resolve().parent.parent
-
-try:
-    from dotenv import load_dotenv
-
-    env_file = Path(os.getenv("ENV_FILE", REPO_ROOT / "config" / ".env"))
-    load_dotenv(env_file, override=False)
-except ImportError:
-    pass
 
 ServingTarget = Literal["local", "astra"]
 VALID_TARGETS: frozenset[str] = frozenset(get_args(ServingTarget))
@@ -34,6 +28,14 @@ class Zone(StrEnum):
     GOLD = "gold"
     QUARANTINE = "quarantine"
     CHECKPOINTS = "checkpoints"
+
+
+def load_env_file() -> None:
+    """Carga config/.env (o ENV_FILE) sin pisar variables ya definidas.
+
+    Se llama desde los puntos de entrada. En Docker compose ya inyecta el .env.
+    """
+    load_dotenv(Path(os.getenv("ENV_FILE", REPO_ROOT / "config" / ".env")), override=False)
 
 
 def new_run_id() -> str:

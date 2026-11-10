@@ -4,10 +4,11 @@ from pathlib import Path
 from pyspark.sql.functions import col, lit
 from pyspark.sql.types import IntegerType, StringType, StructField, StructType
 
+from src.bronze.batch import ingest
 from src.bronze.batch.ingest import ROW_ORDER_COL, ingest_source
 from src.common.columns import INGEST_DATE, INGEST_TS, RUN_ID, SOURCE_FILE
 from src.common.lake import dataset_storage_stats, read_dataset
-from src.common.schemas import CORRUPT_RECORD_COL, Source
+from src.common.schemas import CORRUPT_RECORD_COL, SOURCES, Source
 from src.quality.rules import RULE_ID_COL
 
 SOURCE = Source(
@@ -100,3 +101,14 @@ def test_storage_stats_inexistente_da_ceros(settings):
     stats = dataset_storage_stats(settings, "bronze", "no_existe")
 
     assert (stats.partitions, stats.files, stats.bytes) == (0, 0, 0)
+
+
+def test_run_ingesta_todas_las_fuentes_de_landing(spark, settings):
+    for source in SOURCES.values():
+        header = ",".join(field.name for field in source.schema.fields)
+        Path(settings.zone_path("landing"), source.path).write_text(header + "\n", encoding="utf-8")
+
+    results = ingest.run(spark, settings)
+
+    assert set(results) == set(SOURCES)
+    assert all(counts["read"] == 0 for counts in results.values())

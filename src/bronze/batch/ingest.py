@@ -14,8 +14,6 @@ from src.quality.rules import split_by_rules
 
 log = logging.getLogger(__name__)
 
-MASTER_DATA = ("customers_orgs", "users", "billing_monthly")
-
 # Posición de la fila en el archivo de origen. Sirve para desempatar idempotentemente entre versiones de la misma clave en un mismo archivo.
 ROW_ORDER_COL = "_row_order"
 
@@ -63,4 +61,4 @@ def ingest_source(spark: SparkSession, settings: Settings, source: Source, inges
 
 def run(spark: SparkSession, settings: Settings) -> dict[str, dict]:
     ingest_ts = lit(datetime.now(timezone.utc)).cast("timestamp")
-    return {name: ingest_source(spark, settings, SOURCES[name], ingest_ts) for name in MASTER_DATA}
+    return {name: ingest_source(spark, settings, source, ingest_ts) for name, source in SOURCES.items()}

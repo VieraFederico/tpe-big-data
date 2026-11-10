@@ -5,9 +5,10 @@ RUN apt-get update \
     && rm -rf /var/lib/apt/lists/*
 
 WORKDIR /app
-COPY config/requirements.txt .
-RUN pip install --no-cache-dir -r requirements.txt
+COPY config/requirements.txt config/requirements-dev.txt ./
+RUN pip install --no-cache-dir -r requirements-dev.txt
 
+COPY pyproject.toml ./
 COPY src ./src
 ENV PYTHONUNBUFFERED=1 \
     PYTHONPATH=/app

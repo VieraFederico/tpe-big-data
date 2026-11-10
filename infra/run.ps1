@@ -20,10 +20,11 @@ Uso: .\infra\run.ps1 <comando> [args]
   check                    Prueba la conexión a Cassandra/AstraDB
   query <archivo.cql> ...  Ejecuta una consulta y guarda evidencia (-p clave=valor)
   test [args]              Corre los tests (pytest)
+  lint                     Chequea estilo y tipos (ruff check, ruff format --check, mypy)
   shell                    Abre una terminal dentro del contenedor
   clean                    Borra las salidas del lake (bronze, silver, gold, quarantine, checkpoints)
   down                     Baja los contenedores (Cassandra local incluida)
-  build                    Reconstruye la imagen (tras cambiar config/requirements.txt)
+  build                    Reconstruye la imagen (tras cambiar config/requirements*.txt)
 "@
 }
 
@@ -76,6 +77,7 @@ switch ($Command) {
         Invoke-Pipeline python -m src.serving.queries @Rest
     }
     "test" { Invoke-Pipeline python -m pytest tests @Rest }
+    "lint" { Invoke-Pipeline sh -c "ruff check . && ruff format --check . && mypy" }
     "shell" { Invoke-Pipeline bash }
     "clean" {
         foreach ($dir in $OutputDirs) {

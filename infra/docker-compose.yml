@@ -31,6 +31,7 @@ services:
     volumes:
       - ../src:/app/src
       - ../tests:/app/tests
+      - ../pyproject.toml:/app/pyproject.toml:ro
       - ../data:/app/data
       - ../secrets:/app/secrets
       - ../evidence:/app/evidence

@@ -18,10 +18,11 @@ Uso: ./infra/run.sh <comando> [args]
   check                    Prueba la conexión a Cassandra/AstraDB
   query <archivo.cql> ...  Ejecuta una consulta y guarda evidencia (-p clave=valor)
   test [args]              Corre los tests (pytest)
+  lint                     Chequea estilo y tipos (ruff check, ruff format --check, mypy)
   shell                    Abre una terminal dentro del contenedor
   clean                    Borra las salidas del lake (bronze, silver, gold, quarantine, checkpoints)
   down                     Baja los contenedores (Cassandra local incluida)
-  build                    Reconstruye la imagen (tras cambiar config/requirements.txt)
+  build                    Reconstruye la imagen (tras cambiar config/requirements*.txt)
 EOF
 }
 
@@ -76,6 +77,9 @@ case "$command" in
     ;;
   test)
     pipeline python -m pytest tests "$@"
+    ;;
+  lint)
+    pipeline sh -c "ruff check . && ruff format --check . && mypy"
     ;;
   shell)
     pipeline bash

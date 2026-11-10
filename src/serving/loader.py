@@ -11,6 +11,7 @@ from typing import Any
 from pyspark.sql import DataFrame, Row
 
 from src.config import Settings, load_settings
+from src.serving.errors import WriteFailedError
 
 log = logging.getLogger(__name__)
 
@@ -74,7 +75,7 @@ def write_dataframe(
 
     Raises:
         ValueError: Si la tabla o alguna columna no es un identificador CQL válido.
-        RuntimeError: Si hubo filas fallidas y ``fail_on_error`` es True.
+        WriteFailedError: Si hubo filas fallidas y ``fail_on_error`` es True.
     """
     resolved_settings = settings or load_settings()
     columns = tuple(df.columns)
@@ -101,7 +102,7 @@ def write_dataframe(
     log.info("Carga %s: %d filas escritas, %d fallidas en %.2fs", table, written, failed, result.seconds)
 
     if failed and fail_on_error:
-        raise RuntimeError(f"{failed} filas fallaron al escribir {table}; ver logs de los workers")
+        raise WriteFailedError(table, failed)
     return result
 
 

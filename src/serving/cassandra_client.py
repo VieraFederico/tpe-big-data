@@ -12,6 +12,7 @@ from cassandra.protocol import InvalidRequest
 
 from src.config import Settings, load_settings
 from src.serving.astra_bundle import ensure_bundle
+from src.serving.errors import KeyspaceNotFoundError
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ def get_session(settings: Settings | None = None) -> Session:
     keyspace), el cluster se cierra antes de propagar el error para no dejar hilos vivos.
 
     Raises:
-        RuntimeError: Si el keyspace no existe (en Astra se crea desde la UI).
+        KeyspaceNotFoundError: Si el keyspace no existe (en Astra se crea desde la UI).
     """
     resolved_settings = settings or load_settings()
     is_astra = resolved_settings.serving_target == "astra"
@@ -72,14 +73,7 @@ def get_session(settings: Settings | None = None) -> Session:
                 "WITH replication = {'class': 'SimpleStrategy', "
                 f"'replication_factor': {LOCAL_REPLICATION_FACTOR}}}"
             )
-        session.set_keyspace(resolved_settings.keyspace)
-    except InvalidRequest as error:
-        cluster.shutdown()
-        raise RuntimeError(
-            f"El keyspace {resolved_settings.keyspace!r} no existe en "
-            f"{resolved_settings.serving_target}. "
-            "En Astra hay que crearlo desde la UI (ver infra/README.md)."
-        ) from error
+        _use_keyspace(session, resolved_settings)
     except BaseException:
         cluster.shutdown()
         raise
@@ -87,6 +81,22 @@ def get_session(settings: Settings | None = None) -> Session:
     log.info("Sesión CQL abierta (target=%s, keyspace=%s)",
              resolved_settings.serving_target, resolved_settings.keyspace)
     return session
+
+
+def _use_keyspace(session: Session, settings: Settings) -> None:
+    """Posiciona la sesión en el keyspace configurado.
+
+    Raises:
+        KeyspaceNotFoundError: Si el keyspace no existe.
+    """
+    try:
+        session.set_keyspace(settings.keyspace)
+    except InvalidRequest as error:
+        raise KeyspaceNotFoundError(
+            settings.keyspace,
+            f"El keyspace {settings.keyspace!r} no existe en {settings.serving_target}. "
+            "En Astra hay que crearlo desde la UI (ver infra/README.md).",
+        ) from error
 
 
 @contextmanager

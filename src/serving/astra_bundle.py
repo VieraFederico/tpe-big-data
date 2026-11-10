@@ -9,6 +9,7 @@ import urllib.request
 from pathlib import Path
 
 from src.config import REPO_ROOT, Settings
+from src.serving.errors import AstraApiError
 
 log = logging.getLogger(__name__)
 
@@ -44,7 +45,7 @@ def ensure_bundle(settings: Settings) -> str:
 
     Raises:
         ValueError: Si no hay bundle y falta el endpoint o el token para descargarlo.
-        RuntimeError: Si la DevOps API de Astra responde con error.
+        AstraApiError: Si la DevOps API de Astra responde con error.
     """
     if settings.astra_bundle_path and Path(settings.astra_bundle_path).is_file():
         return settings.astra_bundle_path
@@ -81,7 +82,7 @@ def _request_download_url(db_id: str, token: str) -> str:
     except urllib.error.HTTPError as error:
         is_auth_error = error.code in AUTH_ERROR_STATUS_CODES
         hint = " (token sin permisos sobre la base o inválido)" if is_auth_error else ""
-        raise RuntimeError(f"La DevOps API de Astra respondió {error.code}{hint}") from error
+        raise AstraApiError(error.code, f"La DevOps API de Astra respondió {error.code}{hint}") from error
     return body["downloadURL"]
 
 

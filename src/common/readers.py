@@ -7,7 +7,7 @@ a quarantine sin perder el dato.
 from typing import TypeVar
 
 from pyspark.sql import DataFrame, DataFrameReader, SparkSession
-from pyspark.sql.streaming import DataStreamReader
+from pyspark.sql.streaming.readwriter import DataStreamReader
 
 from src.common.schemas import CORRUPT_RECORD_COL, USAGE_EVENTS, Source
 from src.config import Settings, Zone

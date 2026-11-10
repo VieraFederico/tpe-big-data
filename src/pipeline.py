@@ -5,6 +5,7 @@ import logging
 import sys
 import time
 from collections.abc import Callable
+from typing import cast
 
 from pyspark.sql import SparkSession
 
@@ -42,7 +43,7 @@ def _resolve(step: str) -> StepRunner:
     step_runner = getattr(module, "run", None)
     if not callable(step_runner):
         raise NotImplementedError(missing_message)
-    return step_runner
+    return cast(StepRunner, step_runner)
 
 
 def run_steps(steps: list[str], run_id: str | None = None) -> None:

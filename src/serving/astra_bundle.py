@@ -83,7 +83,8 @@ def _request_download_url(db_id: str, token: str) -> str:
         is_auth_error = error.code in AUTH_ERROR_STATUS_CODES
         hint = " (token sin permisos sobre la base o inválido)" if is_auth_error else ""
         raise AstraApiError(error.code, f"La DevOps API de Astra respondió {error.code}{hint}") from error
-    return body["downloadURL"]
+    download_url: str = body["downloadURL"]
+    return download_url
 
 
 def _download(url: str, target: Path) -> None:

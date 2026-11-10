@@ -1,3 +1,4 @@
+"""Paso bronze_stream: ingesta incremental de los eventos de uso de Landing a Bronze."""
 import logging
 
 from pyspark.sql import DataFrame, SparkSession
@@ -19,6 +20,10 @@ MAX_FILES_PER_TRIGGER = 10
 
 
 def build_stream(spark: SparkSession, settings: Settings) -> DataFrame:
+    """Arma el stream de eventos con timestamp parseado y deduplicado dentro del watermark.
+
+    Los eventos sin ``event_id`` se deduplican por un hash de todo su contenido.
+    """
     source_cols = [field.name for field in USAGE_EVENTS.read_schema().fields]
     return (
         with_technical_columns(read_usage_events_stream(spark, settings, MAX_FILES_PER_TRIGGER), settings.run_id)
@@ -35,6 +40,8 @@ def build_stream(spark: SparkSession, settings: Settings) -> DataFrame:
 
 
 def write_micro_batch(settings: Settings):
+    """Devuelve la función de ``foreachBatch`` que separa cada micro-lote en Bronze y quarantine."""
+
     def _write(batch_df: DataFrame, batch_id: int) -> None:
         batch_df.persist()
         try:
@@ -52,6 +59,7 @@ def write_micro_batch(settings: Settings):
 
 
 def _count_or_zero(spark: SparkSession, settings: Settings, zone: str) -> int:
+    """Filas de eventos escritas en la zona; 0 si todavía no existe el dataset."""
     try:
         return read_dataset(spark, settings, zone, USAGE_EVENTS.name).count()
     except AnalysisException:
@@ -59,6 +67,15 @@ def _count_or_zero(spark: SparkSession, settings: Settings, zone: str) -> int:
 
 
 def run(spark: SparkSession, settings: Settings) -> dict:
+    """Paso ``bronze_stream``: procesa los archivos nuevos (availableNow) y devuelve métricas.
+
+    El checkpoint recuerda qué archivos ya se leyeron y el estado de deduplicación,
+    así que volver a correr el paso solo procesa lo nuevo.
+
+    Returns:
+        Métricas de la corrida: micro-lotes, filas leídas, descartes por watermark y
+        por duplicado, y totales acumulados en Bronze y quarantine.
+    """
     query = (
         build_stream(spark, settings)
         .writeStream.foreachBatch(write_micro_batch(settings))
@@ -68,13 +85,22 @@ def run(spark: SparkSession, settings: Settings) -> dict:
     )
     query.awaitTermination()
 
-    progress = query.recentProgress
-    state_ops = [op for p in progress for op in p.get("stateOperators", [])]
+    batch_progresses = query.recentProgress
+    state_operators = [
+        state_operator
+        for batch_progress in batch_progresses
+        for state_operator in batch_progress.get("stateOperators", [])
+    ]
     stats = {
-        "micro_batches": len(progress),
-        "rows_read": sum(p["numInputRows"] for p in progress),
-        "dropped_by_watermark": sum(op.get("numRowsDroppedByWatermark", 0) for op in state_ops),
-        "dropped_duplicates": sum(op.get("customMetrics", {}).get("numDroppedDuplicateRows", 0) for op in state_ops),
+        "micro_batches": len(batch_progresses),
+        "rows_read": sum(batch_progress["numInputRows"] for batch_progress in batch_progresses),
+        "dropped_by_watermark": sum(
+            state_operator.get("numRowsDroppedByWatermark", 0) for state_operator in state_operators
+        ),
+        "dropped_duplicates": sum(
+            state_operator.get("customMetrics", {}).get("numDroppedDuplicateRows", 0)
+            for state_operator in state_operators
+        ),
         "bronze_total": _count_or_zero(spark, settings, "bronze"),
         "quarantine_total": _count_or_zero(spark, settings, "quarantine"),
     }

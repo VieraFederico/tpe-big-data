@@ -11,16 +11,16 @@ DB_ID = "0123abcd-0123-4567-89ab-0123456789ab"
 
 @pytest.fixture(autouse=True)
 def clean_env(monkeypatch):
-    for var in ("SERVING_TARGET", "ASTRA_DB_APPLICATION_TOKEN", "ASTRA_DB_API_ENDPOINT",
-                "ASTRA_DB_SECURE_BUNDLE_PATH", "DATALAKE_PATH"):
-        monkeypatch.delenv(var, raising=False)
+    for variable_name in ("SERVING_TARGET", "ASTRA_DB_APPLICATION_TOKEN", "ASTRA_DB_API_ENDPOINT",
+                          "ASTRA_DB_SECURE_BUNDLE_PATH", "DATALAKE_PATH"):
+        monkeypatch.delenv(variable_name, raising=False)
 
 
 def test_defaults_locales():
-    s = load_settings()
+    loaded_settings = load_settings()
 
-    assert s.serving_target == "local"
-    assert s.zone_path("bronze").endswith("/bronze")
+    assert loaded_settings.serving_target == "local"
+    assert loaded_settings.zone_path("bronze").endswith("/bronze")
 
 
 def test_zone_path_ignora_barra_final(monkeypatch):

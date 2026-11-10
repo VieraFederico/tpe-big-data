@@ -1,3 +1,4 @@
+"""Sesiones CQL contra la Cassandra local o AstraDB."""
 import atexit
 import logging
 from contextlib import contextmanager
@@ -18,6 +19,7 @@ _shared_sessions: dict[Settings, Session] = {}
 
 
 def _default_profile(local_dc: str | None) -> dict:
+    """Perfil de ejecución por defecto: token-aware, LOCAL_QUORUM y timeout de 30 s."""
     return {
         EXEC_PROFILE_DEFAULT: ExecutionProfile(
             load_balancing_policy=TokenAwarePolicy(DCAwareRoundRobinPolicy(local_dc=local_dc)),
@@ -80,6 +82,7 @@ def get_session(settings: Settings | None = None) -> Session:
 
 @contextmanager
 def session_scope(settings: Settings | None = None) -> Generator[Session, None, None]:
+    """Abre una sesión CQL y cierra su cluster al salir del bloque ``with``."""
     session = get_session(settings)
     try:
         yield session
@@ -88,6 +91,11 @@ def session_scope(settings: Settings | None = None) -> Generator[Session, None, 
 
 
 def get_shared_session(settings: Settings) -> Session:
+    """Sesión reutilizable por proceso (una por Settings), pensada para los workers de Spark.
+
+    Abrir un cluster por partición es caro; así cada worker abre uno solo y se cierra
+    al terminar el proceso.
+    """
     session = _shared_sessions.get(settings)
     if session is None or session.is_shutdown:
         session = get_session(settings)

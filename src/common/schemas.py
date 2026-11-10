@@ -1,3 +1,4 @@
+"""Esquemas explícitos de las fuentes de Landing y sus claves naturales."""
 from dataclasses import dataclass
 
 from pyspark.sql.types import (
@@ -13,21 +14,34 @@ from pyspark.sql.types import (
 
 CORRUPT_RECORD_COL = "_corrupt_record"
 
-# Fuente de datos de landing, con un esquema explicito
-# Con una clave natural para deduplicar datos
+
 @dataclass(frozen=True)
 class Source:
+    """Fuente de datos de Landing con esquema explícito.
+
+    Attributes:
+        name: Nombre del dataset en las zonas del lake.
+        path: Archivo o carpeta dentro de Landing.
+        schema: Esquema de los datos (sin la columna de registro corrupto).
+        natural_key: Columnas que identifican una fila; se usan para deduplicar.
+    """
+
     name: str
     path: str
     schema: StructType
     natural_key: tuple[str, ...]
 
     def read_schema(self) -> StructType:
+        """Esquema de lectura: el de los datos más la columna de registro corrupto."""
         return StructType([*self.schema.fields, StructField(CORRUPT_RECORD_COL, StringType())])
 
 
-def _fields(*specs: tuple[str, object]) -> StructType:
-    return StructType([StructField(name, dtype, nullable=True) for name, dtype in specs])
+def _fields(*field_specs: tuple[str, object]) -> StructType:
+    """Arma un StructType nullable a partir de pares (nombre, tipo)."""
+    return StructType(
+        [StructField(name, data_type, nullable=True) for name, data_type in field_specs]
+    )
+
 
 STRING, DATE, DOUBLE, BOOLEAN, INTEGER, LONG = (
     StringType(), DateType(), DoubleType(), BooleanType(), IntegerType(), LongType()
@@ -104,8 +118,8 @@ NPS_SURVEYS = Source(
 )
 
 SOURCES: dict[str, Source] = {
-    s.name: s
-    for s in (
+    source.name: source
+    for source in (
         CUSTOMERS_ORGS, USERS, RESOURCES, BILLING_MONTHLY,
         SUPPORT_TICKETS, MARKETING_TOUCHES, NPS_SURVEYS,
     )

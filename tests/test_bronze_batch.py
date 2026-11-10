@@ -30,8 +30,8 @@ c,no_es_numero
 
 def _ingest(spark, settings):
     Path(settings.zone_path("landing"), SOURCE.path).write_text(CSV, encoding="utf-8")
-    ts = lit(datetime(2026, 11, 8, tzinfo=timezone.utc)).cast("timestamp")
-    return ingest_source(spark, settings, SOURCE, ts)
+    ingest_ts = lit(datetime(2026, 11, 8, tzinfo=timezone.utc)).cast("timestamp")
+    return ingest_source(spark, settings, SOURCE, ingest_ts)
 
 
 def test_conteos(spark, settings):
@@ -47,7 +47,7 @@ def test_bronze_deduplica_y_agrega_columnas_tecnicas(spark, settings):
     _ingest(spark, settings)
     bronze = read_dataset(spark, settings, "bronze", SOURCE.name)
 
-    assert sorted(r.id for r in bronze.collect()) == ["a", "b"]
+    assert sorted(row.id for row in bronze.collect()) == ["a", "b"]
     assert {INGEST_TS, INGEST_DATE, SOURCE_FILE, RUN_ID} <= set(bronze.columns)
     assert {row[RUN_ID] for row in bronze.collect()} == {settings.run_id}
     assert CORRUPT_RECORD_COL not in bronze.columns
@@ -58,27 +58,28 @@ def test_quarantine_por_tipo_invalido_y_clave_nula(spark, settings):
     _ingest(spark, settings)
     quarantine = read_dataset(spark, settings, "quarantine", SOURCE.name)
 
-    assert sorted(r[RULE_ID_COL] for r in quarantine.collect()) == ["BRZ_NULL_KEY", "BRZ_PARSE"]
+    assert sorted(row[RULE_ID_COL] for row in quarantine.collect()) == ["BRZ_NULL_KEY", "BRZ_PARSE"]
     corrupt = quarantine.filter(col(RULE_ID_COL) == "BRZ_PARSE").first()
     assert corrupt[CORRUPT_RECORD_COL] == "c,no_es_numero"
 
 
 def test_conflicto_de_clave_gana_la_ultima_aparicion(spark, settings):
     # x aparece 3 veces con distinto qty: debe quedar la última (3)
-    csv = """id,qty
+    csv_content = """id,qty
 x,1
 y,5
 x,2
 x,3
 """
-    Path(settings.zone_path("landing"), SOURCE.path).write_text(csv, encoding="utf-8")
-    ts = lit(datetime(2026, 11, 8, tzinfo=timezone.utc)).cast("timestamp")
-    counts = ingest_source(spark, settings, SOURCE, ts)
+    Path(settings.zone_path("landing"), SOURCE.path).write_text(csv_content, encoding="utf-8")
+    ingest_ts = lit(datetime(2026, 11, 8, tzinfo=timezone.utc)).cast("timestamp")
+    counts = ingest_source(spark, settings, SOURCE, ingest_ts)
 
-    bronze = {r.id: r.qty for r in read_dataset(spark, settings, "bronze", SOURCE.name).collect()}
-    assert bronze == {"x": 3, "y": 5}
+    bronze = read_dataset(spark, settings, "bronze", SOURCE.name)
+    qty_by_id = {row.id: row.qty for row in bronze.collect()}
+    assert qty_by_id == {"x": 3, "y": 5}
     assert (counts["exact_duplicates"], counts["key_conflicts"]) == (0, 2)
-    assert ROW_ORDER_COL not in read_dataset(spark, settings, "bronze", SOURCE.name).columns
+    assert ROW_ORDER_COL not in bronze.columns
 
 
 def test_reejecutar_no_duplica(spark, settings):
@@ -100,12 +101,12 @@ def test_storage_stats_reporta_ruta_archivos_y_tamano(spark, settings):
 def test_un_archivo_por_particion_aunque_haya_varias_tareas(spark, settings):
     # Con 8 particiones de shuffle, el dedupe reparte las filas en varias tareas;
     # sin el repartition de write_dataset cada tarea escribiría su propio archivo.
-    original = spark.conf.get("spark.sql.shuffle.partitions")
+    original_shuffle_partitions = spark.conf.get("spark.sql.shuffle.partitions")
     spark.conf.set("spark.sql.shuffle.partitions", "8")
     try:
         _ingest(spark, settings)
     finally:
-        spark.conf.set("spark.sql.shuffle.partitions", original)
+        spark.conf.set("spark.sql.shuffle.partitions", original_shuffle_partitions)
 
     stats = dataset_storage_stats(settings, "bronze", SOURCE.name)
     assert (stats.partitions, stats.files) == (1, 1)

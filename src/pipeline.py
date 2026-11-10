@@ -1,3 +1,4 @@
+"""Punto de entrada del pipeline Landing -> Serving: ejecuta los pasos en orden."""
 import argparse
 import importlib
 import logging
@@ -40,6 +41,16 @@ def _resolve(step: str) -> Callable[..., object]:
 
 
 def run_steps(steps: list[str], run_id: str | None = None) -> None:
+    """Ejecuta los pasos indicados, en orden, con una misma SparkSession y Settings.
+
+    Args:
+        steps: Nombres de pasos (claves de STEPS).
+        run_id: Id de la corrida; si no se pasa se genera uno.
+
+    Raises:
+        ValueError: Si algún paso no existe.
+        NotImplementedError: Si algún paso todavía no tiene ``run``.
+    """
     unknown = [step for step in steps if step not in STEPS]
     if unknown:
         raise ValueError(f"Pasos desconocidos: {unknown}. Disponibles: {list(STEPS)}")
@@ -61,12 +72,13 @@ def run_steps(steps: list[str], run_id: str | None = None) -> None:
 
 
 def main(argv: list[str] | None = None) -> int:
+    """CLI del pipeline. Devuelve el código de salida (0 ok, 1 si falló algún paso)."""
     parser = argparse.ArgumentParser(description="Ejecuta el pipeline Landing -> Serving.")
     parser.add_argument("--steps", help=f"Pasos separados por coma (default: todos). Opciones: {','.join(STEPS)}")
     parser.add_argument("--list", action="store_true", help="Lista los pasos y si están implementados")
-    args = parser.parse_args(argv)
+    arguments = parser.parse_args(argv)
 
-    if args.list:
+    if arguments.list:
         for step in STEPS:
             try:
                 _resolve(step)
@@ -79,7 +91,7 @@ def main(argv: list[str] | None = None) -> int:
     run_id = new_run_id()
     log_file = setup_logging("pipeline", run_id=run_id)
     log.info("Log de la corrida: %s", log_file)
-    steps = args.steps.split(",") if args.steps else list(STEPS)
+    steps = arguments.steps.split(",") if arguments.steps else list(STEPS)
     try:
         run_steps([step.strip() for step in steps], run_id)
     except Exception:

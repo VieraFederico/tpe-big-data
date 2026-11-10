@@ -1,3 +1,4 @@
+"""Configuración del pipeline, leída de variables de entorno (y de config/.env si existe)."""
 import os
 import uuid
 from dataclasses import dataclass, field
@@ -8,7 +9,7 @@ REPO_ROOT = Path(__file__).resolve().parent.parent
 
 try:
     from dotenv import load_dotenv
-    
+
     env_file = Path(os.getenv("ENV_FILE", REPO_ROOT / "config" / ".env"))
     load_dotenv(env_file, override=False)
 except ImportError:
@@ -18,12 +19,27 @@ VALID_TARGETS = {"local", "astra"}
 
 
 def new_run_id() -> str:
+    """Genera un id de corrida ordenable por fecha, p. ej. ``20261110T153000Z-a1b2c3``."""
     timestamp = datetime.now(timezone.utc).strftime("%Y%m%dT%H%M%SZ")
     return f"{timestamp}-{uuid.uuid4().hex[:6]}"
 
 
 @dataclass(frozen=True)
 class Settings:
+    """Configuración resuelta de una corrida del pipeline.
+
+    Attributes:
+        datalake_path: Raíz del lake; cada zona es una subcarpeta.
+        serving_target: ``local`` (Cassandra en Docker) o ``astra`` (AstraDB).
+        keyspace: Keyspace de Cassandra donde viven las tablas de serving.
+        cassandra_host: Host de la Cassandra local.
+        cassandra_port: Puerto de la Cassandra local.
+        astra_token: Token de aplicación de Astra (solo para ``astra``).
+        astra_api_endpoint: Endpoint de la base en Astra; se usa para descargar el bundle.
+        astra_bundle_path: Ruta al secure connect bundle, si ya está descargado.
+        run_id: Id de la corrida; queda guardado en cada fila escrita.
+    """
+
     datalake_path: str
     serving_target: str
     keyspace: str
@@ -40,6 +56,18 @@ class Settings:
 
 
 def load_settings(run_id: str | None = None) -> Settings:
+    """Arma la configuración desde las variables de entorno y la valida.
+
+    Args:
+        run_id: Id de corrida a usar; si no se pasa se genera uno nuevo.
+
+    Returns:
+        La configuración lista para usar.
+
+    Raises:
+        ValueError: Si SERVING_TARGET es inválido o, con ``astra``, falta el token o
+            una forma de obtener el secure connect bundle.
+    """
     target = os.getenv("SERVING_TARGET", "local").strip().lower()
     if target not in VALID_TARGETS:
         raise ValueError(f"SERVING_TARGET={target!r} inválido; usar uno de {sorted(VALID_TARGETS)}")

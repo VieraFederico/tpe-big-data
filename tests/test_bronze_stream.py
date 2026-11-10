@@ -11,9 +11,9 @@ from src.common.schemas import USAGE_EVENTS
 from src.quality.rules import RULE_ID_COL
 
 
-def _event(event_id, ts="2025-08-01T10:00:00Z", **extra):
+def _event(event_id, timestamp="2025-08-01T10:00:00Z", **extra):
     return {
-        "event_id": event_id, "timestamp": ts, "org_id": "org_1", "resource_id": "res_1",
+        "event_id": event_id, "timestamp": timestamp, "org_id": "org_1", "resource_id": "res_1",
         "service": "compute", "region": "us-east", "metric": "cpu_hours", "value": "1.5",
         "unit": "h", "cost_usd_increment": 0.5, "schema_version": 1, **extra,
     }
@@ -29,7 +29,7 @@ def _write_part(settings, name, lines):
 
 
 def _bronze_ids(spark, settings):
-    return sorted(r.event_id for r in read_dataset(spark, settings, "bronze", USAGE_EVENTS.name).collect())
+    return sorted(row.event_id for row in read_dataset(spark, settings, "bronze", USAGE_EVENTS.name).collect())
 
 
 def test_dedupe_y_quarantine_en_un_micro_lote(spark, settings):
@@ -46,7 +46,7 @@ def test_dedupe_y_quarantine_en_un_micro_lote(spark, settings):
     assert stats["dropped_duplicates"] == 1
     assert stats["bronze_total"] == 2
     quarantine = read_dataset(spark, settings, "quarantine", USAGE_EVENTS.name)
-    assert [r[RULE_ID_COL] for r in quarantine.collect()] == ["BRZ_PARSE"]
+    assert [row[RULE_ID_COL] for row in quarantine.collect()] == ["BRZ_PARSE"]
 
 
 def test_esquema_v2_conserva_campos_nuevos(spark, settings):
@@ -57,9 +57,9 @@ def test_esquema_v2_conserva_campos_nuevos(spark, settings):
 
     ingest.run(spark, settings)
 
-    rows = {r.event_id: r for r in read_dataset(spark, settings, "bronze", USAGE_EVENTS.name).collect()}
-    assert rows["v1"].genai_tokens is None and rows["v1"].carbon_kg is None
-    assert rows["v2"].genai_tokens == 1000 and rows["v2"].carbon_kg == 0.2
+    row_by_event_id = {row.event_id: row for row in read_dataset(spark, settings, "bronze", USAGE_EVENTS.name).collect()}
+    assert row_by_event_id["v1"].genai_tokens is None and row_by_event_id["v1"].carbon_kg is None
+    assert row_by_event_id["v2"].genai_tokens == 1000 and row_by_event_id["v2"].carbon_kg == 0.2
 
 
 def test_reejecucion_es_idempotente_y_recuerda_duplicados(spark, settings):
@@ -80,8 +80,8 @@ def test_reejecucion_es_idempotente_y_recuerda_duplicados(spark, settings):
 def test_timestamp_invalido_o_nulo_va_a_quarantine(spark, settings):
     _write_part(settings, "events_part_0000.jsonl", [
         _event("ok"),
-        _event("fecha_rota", ts="no-es-una-fecha"),
-        _event("sin_fecha", ts=None),
+        _event("fecha_rota", timestamp="no-es-una-fecha"),
+        _event("sin_fecha", timestamp=None),
         "{esto no es json",      # corrupta: se reporta como BRZ_PARSE, no como BRZ_BAD_TS
     ])
 
@@ -94,11 +94,11 @@ def test_timestamp_invalido_o_nulo_va_a_quarantine(spark, settings):
 
 
 def test_evento_tardio_se_descarta_por_watermark(spark, settings):
-    _write_part(settings, "events_part_0000.jsonl", [_event("nuevo", ts="2025-09-30T00:00:00Z")])
+    _write_part(settings, "events_part_0000.jsonl", [_event("nuevo", timestamp="2025-09-30T00:00:00Z")])
     ingest.run(spark, settings)
 
     # Más de 61 días antes del máximo visto: queda detrás del watermark.
-    _write_part(settings, "events_part_0001.jsonl", [_event("viejo", ts="2025-07-01T00:00:00Z")])
+    _write_part(settings, "events_part_0001.jsonl", [_event("viejo", timestamp="2025-07-01T00:00:00Z")])
     stats = ingest.run(spark, settings)
 
     assert stats["dropped_by_watermark"] == 1

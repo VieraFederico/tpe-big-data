@@ -1,3 +1,4 @@
+"""Reglas de calidad declarativas y separación de filas válidas / en cuarentena."""
 from dataclasses import dataclass
 from functools import reduce
 
@@ -12,6 +13,14 @@ QUARANTINE_TS_COL = "_quarantine_ts"
 
 @dataclass(frozen=True)
 class Rule:
+    """Regla de calidad.
+
+    Attributes:
+        rule_id: Código corto que queda en la cuarentena, p. ej. ``BRZ_PARSE``.
+        reason: Descripción legible de la violación.
+        violation: Condición que es verdadera cuando la fila viola la regla.
+    """
+
     rule_id: str
     reason: str
     violation: Column

@@ -1,3 +1,4 @@
+"""Paso bronze_batch: ingesta de las fuentes CSV de Landing a Bronze."""
 import logging
 from datetime import datetime, timezone
 
@@ -14,10 +15,21 @@ from src.quality.rules import split_by_rules
 
 log = logging.getLogger(__name__)
 
-# Posición de la fila en el archivo de origen. Sirve para desempatar idempotentemente entre versiones de la misma clave en un mismo archivo.
+# Posición de la fila en el archivo de origen. Sirve para desempatar de forma idempotente
+# entre versiones de la misma clave dentro de un mismo archivo.
 ROW_ORDER_COL = "_row_order"
 
+
 def dedupe_last_wins(df: DataFrame, natural_key: tuple[str, ...]) -> DataFrame:
+    """Deja una fila por clave natural: la del último archivo y, dentro de él, la última fila.
+
+    Args:
+        df: Datos con SOURCE_FILE y ROW_ORDER_COL.
+        natural_key: Columnas que identifican la fila.
+
+    Returns:
+        Una fila por valor de la clave natural.
+    """
     window = Window.partitionBy(*natural_key).orderBy(col(SOURCE_FILE).desc(), col(ROW_ORDER_COL).desc())
     return (
         df.withColumn("_position_in_key", row_number().over(window))
@@ -27,6 +39,18 @@ def dedupe_last_wins(df: DataFrame, natural_key: tuple[str, ...]) -> DataFrame:
 
 
 def ingest_source(spark: SparkSession, settings: Settings, source: Source, ingest_ts: Column) -> dict:
+    """Ingesta una fuente CSV de Landing a Bronze, mandando las filas inválidas a quarantine.
+
+    Args:
+        spark: Sesión de Spark.
+        settings: Configuración de la corrida.
+        source: Fuente a ingestar.
+        ingest_ts: Momento de ingesta, compartido por todas las fuentes de la corrida.
+
+    Returns:
+        Conteos de la ingesta: ``read``, ``quarantine``, ``written``,
+        ``exact_duplicates``, ``key_conflicts`` y ``duplicates``.
+    """
     raw = (
         with_technical_columns(read_csv_source(spark, source, settings), settings.run_id, ingest_ts)
         .withColumn(ROW_ORDER_COL, monotonically_increasing_id())
@@ -62,5 +86,6 @@ def ingest_source(spark: SparkSession, settings: Settings, source: Source, inges
 
 
 def run(spark: SparkSession, settings: Settings) -> dict[str, dict]:
+    """Paso ``bronze_batch``: ingesta todas las fuentes CSV y devuelve sus conteos por nombre."""
     ingest_ts = lit(datetime.now(timezone.utc)).cast("timestamp")
     return {name: ingest_source(spark, settings, source, ingest_ts) for name, source in SOURCES.items()}

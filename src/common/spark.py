@@ -1,9 +1,15 @@
+"""Creación de la SparkSession del pipeline."""
 import os
 
 from pyspark.sql import SparkSession
 
 
 def get_spark(app_name: str = "cloud-analytics") -> SparkSession:
+    """Crea (o reutiliza) la SparkSession, configurable por variables de entorno.
+
+    Fija la zona horaria en UTC y el overwrite dinámico de particiones, para que
+    reescribir un dataset solo reemplace las particiones presentes en los datos nuevos.
+    """
     spark = (
         SparkSession.builder.appName(app_name)
         .master(os.getenv("SPARK_MASTER", "local[*]"))

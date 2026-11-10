@@ -1,3 +1,4 @@
+"""Chequeo rápido de la conexión al serving: versión de Cassandra y tablas del keyspace."""
 import logging
 import sys
 
@@ -9,12 +10,13 @@ log = logging.getLogger("check_connection")
 
 
 def main() -> int:
+    """Se conecta al target configurado y loguea la versión y las tablas existentes."""
     settings = load_settings()
     with session_scope(settings) as session:
         version = session.execute("SELECT release_version FROM system.local").one().release_version
         tables = [
-            r.table_name
-            for r in session.execute(
+            row.table_name
+            for row in session.execute(
                 "SELECT table_name FROM system_schema.tables WHERE keyspace_name = %s",
                 (settings.keyspace,),
             )

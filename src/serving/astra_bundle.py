@@ -1,3 +1,4 @@
+"""Obtención del secure connect bundle de AstraDB (descarga automática si falta)."""
 import json
 import logging
 import os
@@ -17,6 +18,11 @@ ENDPOINT_RE = re.compile(r"^https://([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f
 
 
 def database_id_from_endpoint(endpoint: str) -> str:
+    """Extrae el id (uuid) de la base del endpoint de Astra.
+
+    Raises:
+        ValueError: Si el endpoint no tiene el formato ``https://<db_id>-<region>...``.
+    """
     match = ENDPOINT_RE.match(endpoint.strip())
     if not match:
         raise ValueError(
@@ -24,6 +30,7 @@ def database_id_from_endpoint(endpoint: str) -> str:
             "https://<db_id>-<region>.apps.astra.datastax.com"
         )
     return match.group(1)
+
 
 def ensure_bundle(settings: Settings) -> str:
     """Devuelve la ruta del secure connect bundle de Astra, descargándolo si hace falta.
@@ -59,27 +66,32 @@ def ensure_bundle(settings: Settings) -> str:
 
 
 def _request_download_url(db_id: str, token: str) -> str:
-    req = urllib.request.Request(
+    """Pide a la DevOps API de Astra la URL temporal de descarga del bundle."""
+    request = urllib.request.Request(
         DEVOPS_API.format(db_id=db_id),
         method="POST",
         headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
     )
     try:
-        with urllib.request.urlopen(req, timeout=30) as resp:
-            body = json.load(resp)
-    except urllib.error.HTTPError as exception:
-        hint = " (token sin permisos sobre la base o inválido)" if exception.code in (401, 403) else ""
-        raise RuntimeError(f"La DevOps API de Astra respondió {exception.code}{hint}") from exception
+        with urllib.request.urlopen(request, timeout=30) as response:
+            body = json.load(response)
+    except urllib.error.HTTPError as error:
+        hint = " (token sin permisos sobre la base o inválido)" if error.code in (401, 403) else ""
+        raise RuntimeError(f"La DevOps API de Astra respondió {error.code}{hint}") from error
     return body["downloadURL"]
 
 
 def _download(url: str, target: Path) -> None:
+    """Descarga a un archivo temporal y lo renombra al final, para no dejar un zip a medias."""
     target.parent.mkdir(parents=True, exist_ok=True)
-    fd, tmp = tempfile.mkstemp(dir=target.parent, suffix=".part")
+    temp_file_descriptor, temp_path = tempfile.mkstemp(dir=target.parent, suffix=".part")
     try:
-        with os.fdopen(fd, "wb") as out, urllib.request.urlopen(url, timeout=60) as resp:
-            out.write(resp.read())
-        os.replace(tmp, target)
+        with (
+            os.fdopen(temp_file_descriptor, "wb") as temp_file,
+            urllib.request.urlopen(url, timeout=60) as response,
+        ):
+            temp_file.write(response.read())
+        os.replace(temp_path, target)
     except BaseException:
-        Path(tmp).unlink(missing_ok=True)
+        Path(temp_path).unlink(missing_ok=True)
         raise

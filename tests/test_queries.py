@@ -1,6 +1,24 @@
 import pytest
 
-from src.serving.queries import parse_param
+from src.serving.queries import format_table, parse_param
+
+
+def test_format_table_alinea_columnas_y_muestra_none_vacio():
+    assert format_table(["a", "bb"], [(1, None)]) == "a | bb\n--+---\n1 |   "
+
+
+def test_format_table_sin_filas():
+    assert format_table(["id"], []) == "id\n--\n(sin filas)"
+
+
+def test_format_table_trunca_y_avisa():
+    table = format_table(["id"], [("x",), ("y",)], max_rows=1)
+
+    assert table.splitlines()[-2:] == ["x ", "... (1 filas más en el .csv)"]
+
+
+def test_format_table_sin_columnas():
+    assert format_table([], []) == "(sin columnas)"
 
 
 @pytest.mark.parametrize(

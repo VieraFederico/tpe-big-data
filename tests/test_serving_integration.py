@@ -4,14 +4,17 @@ Levantarla con ``docker compose -f infra/docker-compose.yml --profile local up -
 """
 
 import os
+from dataclasses import replace
 from datetime import date
 
 import pytest
 
-from src.config import Settings
+from src.common.lake import write_dataset
+from src.config import Settings, Zone
+from src.serving import cassandra_writer
 from src.serving.cassandra_client import get_session
+from src.serving.cassandra_writer import write_dataframe
 from src.serving.errors import WriteFailedError
-from src.serving.loader import write_dataframe
 from src.serving.queries import run_query
 
 pytestmark = pytest.mark.integration
@@ -99,3 +102,37 @@ def test_sin_fail_on_error_devuelve_las_filas_fallidas(spark, cassandra_session)
     result = write_dataframe(usage, TABLE, settings, fail_on_error=False)
 
     assert (result.rows_written, result.rows_failed) == (1, 1)
+
+
+TEST_MART = "test_daily_usage"
+TEST_MART_DDL = f"""
+-- Mart de prueba: no representa ningún mart real.
+CREATE TABLE IF NOT EXISTS {TEST_MART} (
+    org_id text, usage_date date, cost double,
+    PRIMARY KEY ((org_id), usage_date)
+);
+"""
+
+
+def test_run_crea_la_tabla_y_carga_gold_sin_duplicar(spark, cassandra_settings, tmp_path):
+    settings, session = cassandra_settings
+    lake_settings = replace(settings, datalake_path=str(tmp_path / "lake"))
+    schema_dir = tmp_path / "schema"
+    schema_dir.mkdir()
+    (schema_dir / f"{TEST_MART}.cql").write_text(TEST_MART_DDL, encoding="utf-8")
+    session.execute(f"DROP TABLE IF EXISTS {TEST_MART}")
+    gold_mart = spark.createDataFrame(
+        [("org_1", date(2025, 8, 1), 3.5), ("org_1", date(2025, 8, 2), None)],
+        "org_id string, usage_date date, cost double",
+    )
+    write_dataset(gold_mart, lake_settings, Zone.GOLD, TEST_MART, partition_by=("usage_date",))
+
+    first_load = cassandra_writer.run(spark, lake_settings, schema_dir)
+    second_load = cassandra_writer.run(spark, lake_settings, schema_dir)
+
+    assert first_load[TEST_MART].rows_written == second_load[TEST_MART].rows_written == 2
+    rows = session.execute(f"SELECT usage_date, cost FROM {TEST_MART} WHERE org_id = 'org_1'")
+    assert sorted((row.usage_date.date(), row.cost) for row in rows) == [
+        (date(2025, 8, 1), 3.5),
+        (date(2025, 8, 2), None),
+    ]

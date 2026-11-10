@@ -4,8 +4,8 @@ import pytest
 from cassandra.protocol import InvalidRequest
 
 from src.serving import astra_bundle, cassandra_client
+from src.serving.cassandra_writer import write_dataframe
 from src.serving.errors import AstraApiError, KeyspaceNotFoundError, ServingError, WriteFailedError
-from src.serving.loader import write_dataframe
 
 
 class FakeSession:

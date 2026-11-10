@@ -23,7 +23,7 @@ STEPS: dict[str, str] = {
     "bronze_stream": "src.bronze.streaming.ingest",
     "silver": "src.silver.build",
     "gold": "src.gold.build",
-    "serving": "src.serving.load",
+    "serving": "src.serving.cassandra_writer",
 }
 
 

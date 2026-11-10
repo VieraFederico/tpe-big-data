@@ -1,4 +1,4 @@
-"""Escritura de DataFrames de Spark en Cassandra/AstraDB, en paralelo desde los workers."""
+"""Escritura de DataFrames de Spark en Cassandra/AstraDB y paso ``serving`` del pipeline."""
 
 import logging
 import os
@@ -7,17 +7,21 @@ import time
 from collections.abc import Callable, Iterable, Iterator
 from dataclasses import dataclass
 from itertools import chain, islice
+from pathlib import Path
 from typing import Any
 
-from pyspark.sql import DataFrame, Row
+from pyspark.sql import DataFrame, Row, SparkSession
 
-from src.config import Settings, load_settings
+from src.common.lake import read_dataset
+from src.config import Settings, Zone, load_settings
+from src.serving.cassandra_client import execute_cql_file, session_scope
 from src.serving.errors import WriteFailedError
 
 log = logging.getLogger(__name__)
 
 IDENTIFIER_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
 DEFAULT_WRITE_CONCURRENCY = 32
+SCHEMA_DIR = Path(__file__).parent / "cql" / "schema"
 
 
 @dataclass(frozen=True)
@@ -132,6 +136,26 @@ def foreach_batch_writer(
         log.info("Micro-lote %d -> %s: %d filas", batch_id, table, result.rows_written)
 
     return _write
+
+
+def run(
+    spark: SparkSession, settings: Settings, schema_dir: Path = SCHEMA_DIR
+) -> dict[str, WriteResult]:
+    """Paso ``serving``: publica en Cassandra cada mart que tenga su DDL en ``schema_dir``.
+
+    ``<mart>.cql`` define la tabla ``<mart>``, que se carga desde ``gold/<mart>``.
+    Cassandra trata cada INSERT como upsert por clave primaria, así que volver a
+    correr el paso no duplica filas.
+    """
+    ddl_by_mart = {cql_path.stem: cql_path for cql_path in sorted(schema_dir.glob("*.cql"))}
+    with session_scope(settings) as session:
+        for cql_path in ddl_by_mart.values():
+            execute_cql_file(session, cql_path)
+
+    return {
+        mart: write_dataframe(read_dataset(spark, settings, Zone.GOLD, mart), mart, settings)
+        for mart in ddl_by_mart
+    }
 
 
 def _add_counts(left: tuple[int, int], right: tuple[int, int]) -> tuple[int, int]:

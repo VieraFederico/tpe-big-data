@@ -4,6 +4,7 @@ import atexit
 import logging
 from collections.abc import Iterator
 from contextlib import contextmanager
+from pathlib import Path
 
 from cassandra import ConsistencyLevel
 from cassandra.auth import PlainTextAuthProvider
@@ -131,3 +132,19 @@ def _shutdown_shared_sessions() -> None:
     for session in _shared_sessions.values():
         session.cluster.shutdown()
     _shared_sessions.clear()
+
+
+def execute_cql_file(session: Session, cql_path: Path) -> None:
+    """Ejecuta, en orden, todas las sentencias de un archivo .cql."""
+    for statement in read_cql_statements(cql_path):
+        session.execute(statement)
+
+
+def read_cql_statements(cql_path: Path) -> list[str]:
+    """Separa un archivo .cql en sentencias, sin comentarios de línea ni sentencias vacías."""
+    lines = [
+        line
+        for line in cql_path.read_text(encoding="utf-8").splitlines()
+        if not line.strip().startswith("--")
+    ]
+    return [statement.strip() for statement in "\n".join(lines).split(";") if statement.strip()]

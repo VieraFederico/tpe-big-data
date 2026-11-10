@@ -40,7 +40,7 @@ Desde la raíz del repo, con `infra/run.sh` (Linux, Mac, Git Bash) o `infra/run.
 ./infra/run.sh run                               # pipeline completo
 ./infra/run.sh run bronze_batch,bronze_stream    # solo algunos pasos
 ./infra/run.sh check                             # prueba la conexión a Cassandra/AstraDB
-./infra/run.sh query src/serving/queries/q1.cql -p org_id=org_001   # consulta + evidencia
+./infra/run.sh query src/serving/cql/queries/<consulta>.cql -p org_id=org_001   # consulta + evidencia
 ./infra/run.sh shell                             # terminal dentro del contenedor
 ./infra/run.sh clean                             # borra las salidas del lake (landing queda)
 ./infra/run.sh down                              # baja los contenedores

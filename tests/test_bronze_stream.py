@@ -1,9 +1,11 @@
 import json
+from dataclasses import replace
 from pathlib import Path
 
 from pyspark.sql.functions import col
 
 from src.bronze.streaming import ingest
+from src.common.columns import RUN_ID
 from src.common.lake import read_dataset
 from src.common.schemas import USAGE_EVENTS
 from src.quality.rules import RULE_ID_COL
@@ -86,3 +88,14 @@ def test_evento_tardio_se_descarta_por_watermark(spark, settings):
     assert stats["dropped_by_watermark"] == 1
     assert _bronze_ids(spark, settings) == ["nuevo"]
     assert read_dataset(spark, settings, "bronze", USAGE_EVENTS.name).filter(col("event_id") == "viejo").count() == 0
+
+
+def test_cada_fila_guarda_el_run_id_de_la_corrida_que_la_escribio(spark, settings):
+    _write_part(settings, "events_part_0000.jsonl", [_event("e1")])
+    ingest.run(spark, replace(settings, run_id="corrida_a"))
+
+    _write_part(settings, "events_part_0001.jsonl", [_event("e2")])
+    ingest.run(spark, replace(settings, run_id="corrida_b"))
+
+    bronze = read_dataset(spark, settings, "bronze", USAGE_EVENTS.name)
+    assert {row.event_id: row[RUN_ID] for row in bronze.collect()} == {"e1": "corrida_a", "e2": "corrida_b"}

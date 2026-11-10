@@ -5,7 +5,7 @@ import sys
 import time
 
 from src.common.logging_setup import setup_logging
-from src.config import load_settings
+from src.config import load_settings, new_run_id
 
 log = logging.getLogger("pipeline")
 
@@ -29,15 +29,16 @@ def _resolve(step: str):
     return module.run
 
 
-def run_steps(steps: list[str]) -> None:
-    unknown = [s for s in steps if s not in STEPS]
+def run_steps(steps: list[str], run_id: str | None = None) -> None:
+    unknown = [step for step in steps if step not in STEPS]
     if unknown:
         raise ValueError(f"Pasos desconocidos: {unknown}. Disponibles: {list(STEPS)}")
 
     from src.common.spark import get_spark
 
-    settings = load_settings()
-    log.info("Pipeline: pasos=%s, lake=%s, serving=%s", steps, settings.datalake_path, settings.serving_target)
+    settings = load_settings(run_id)
+    log.info("Pipeline: run_id=%s, pasos=%s, lake=%s, serving=%s",
+             settings.run_id, steps, settings.datalake_path, settings.serving_target)
     spark = get_spark()
     try:
         for step in steps:
@@ -65,11 +66,12 @@ def main(argv: list[str] | None = None) -> int:
             print(f"{step:<14} {STEPS[step]:<32} {status}")
         return 0
 
-    log_file = setup_logging("pipeline")
+    run_id = new_run_id()
+    log_file = setup_logging("pipeline", run_id=run_id)
     log.info("Log de la corrida: %s", log_file)
     steps = args.steps.split(",") if args.steps else list(STEPS)
     try:
-        run_steps([s.strip() for s in steps])
+        run_steps([step.strip() for step in steps], run_id)
     except Exception:
         log.exception("El pipeline falló")
         return 1

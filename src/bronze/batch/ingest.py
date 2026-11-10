@@ -30,7 +30,7 @@ def dedupe_last_wins(df: DataFrame, natural_key: tuple[str, ...]) -> DataFrame:
 
 def ingest_source(spark: SparkSession, settings: Settings, source: Source, ingest_ts: Column) -> dict:
     raw = (
-        with_technical_columns(read_csv_source(spark, source, settings), ingest_ts)
+        with_technical_columns(read_csv_source(spark, source, settings), settings.run_id, ingest_ts)
         .withColumn(ROW_ORDER_COL, monotonically_increasing_id())
         .cache()
     )
@@ -40,7 +40,7 @@ def ingest_source(spark: SparkSession, settings: Settings, source: Source, inges
     write_dataset(bronze, settings, "bronze", source.name)
     write_dataset(quarantine.drop(ROW_ORDER_COL), settings, "quarantine", source.name)
 
-    data_cols = [f.name for f in source.schema.fields]
+    data_cols = [field.name for field in source.schema.fields]
     valid_rows = valid.count()
     distinct_rows = valid.select(*data_cols).distinct().count()
     counts = {

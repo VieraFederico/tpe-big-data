@@ -19,9 +19,9 @@ MAX_FILES_PER_TRIGGER = 10
 
 
 def build_stream(spark: SparkSession, settings: Settings) -> DataFrame:
-    source_cols = [f.name for f in USAGE_EVENTS.read_schema().fields]
+    source_cols = [field.name for field in USAGE_EVENTS.read_schema().fields]
     return (
-        with_technical_columns(read_usage_events_stream(spark, settings, MAX_FILES_PER_TRIGGER))
+        with_technical_columns(read_usage_events_stream(spark, settings, MAX_FILES_PER_TRIGGER), settings.run_id)
         .withColumn("event_ts", to_timestamp("timestamp"))
         .withColumn("event_date", to_date("event_ts"))
         .withColumn(

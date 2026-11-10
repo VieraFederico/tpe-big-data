@@ -1,3 +1,5 @@
+import re
+
 import pytest
 
 from src.config import load_settings
@@ -63,3 +65,12 @@ def test_db_id_desde_endpoint():
 def test_endpoint_invalido():
     with pytest.raises(ValueError):
         database_id_from_endpoint("https://algo.com")
+
+
+def test_run_id_se_genera_si_no_se_pasa():
+    assert re.fullmatch(r"\d{8}T\d{6}Z-[0-9a-f]{6}", load_settings().run_id)
+    assert load_settings().run_id != load_settings().run_id
+
+
+def test_run_id_explicito_se_respeta():
+    assert load_settings(run_id="corrida_x").run_id == "corrida_x"

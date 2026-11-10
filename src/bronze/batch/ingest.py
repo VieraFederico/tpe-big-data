@@ -5,7 +5,7 @@ from pyspark.sql import Column, SparkSession
 from pyspark.sql import functions as F
 
 from src.common.columns import with_technical_columns
-from src.common.lake import write_dataset
+from src.common.lake import describe_dataset, write_dataset
 from src.common.readers import read_csv_source
 from src.common.schemas import CORRUPT_RECORD_COL, SOURCES, Source
 from src.config import Settings
@@ -32,6 +32,8 @@ def ingest_source(spark: SparkSession, settings: Settings, source: Source, inges
     counts["duplicates"] = counts["read"] - counts["quarantine"] - counts["written"]
     raw.unpersist()
     log.info("bronze/%s: %s", source.name, counts)
+    for zone in ("bronze", "quarantine"):
+        log.info("%s/%s -> %s", zone, source.name, describe_dataset(settings, zone, source.name))
     return counts
 
 

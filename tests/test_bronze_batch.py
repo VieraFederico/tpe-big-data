@@ -6,7 +6,7 @@ from pyspark.sql.types import IntegerType, StringType, StructField, StructType
 
 from src.bronze.batch.ingest import ingest_source
 from src.common.columns import INGEST_DATE, INGEST_TS, SOURCE_FILE
-from src.common.lake import read_dataset
+from src.common.lake import describe_dataset, read_dataset
 from src.common.schemas import CORRUPT_RECORD_COL, Source
 from src.quality.rules import RULE_ID_COL
 
@@ -63,3 +63,18 @@ def test_reejecutar_no_duplica(spark, settings):
     _ingest(spark, settings)
 
     assert read_dataset(spark, settings, "bronze", SOURCE.name).count() == 2
+
+
+def test_describe_dataset_reporta_ruta_archivos_y_tamano(spark, settings):
+    _ingest(spark, settings)
+    stats = describe_dataset(settings, "bronze", SOURCE.name)
+
+    assert stats.path.endswith(f"bronze/{SOURCE.name}")
+    assert stats.partitions == 1  # una sola ingest_date
+    assert stats.files >= 1 and stats.bytes > 0
+
+
+def test_describe_dataset_inexistente_da_ceros(settings):
+    stats = describe_dataset(settings, "bronze", "no_existe")
+
+    assert (stats.partitions, stats.files, stats.bytes) == (0, 0, 0)

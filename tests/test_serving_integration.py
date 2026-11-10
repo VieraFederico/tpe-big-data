@@ -33,7 +33,9 @@ def cassandra_settings():
     try:
         session = get_session(integration_settings)
     except Exception as error:  # sin Cassandra: NoHostAvailable, DNS, timeout...
-        pytest.skip(f"Cassandra no disponible: {error}")
+        pytest.skip(
+            f"Cassandra no disponible en {integration_settings.cassandra_host}: {error!r}"
+        )
     session.execute(
         f"CREATE TABLE IF NOT EXISTS {TABLE} "
         "(org_id text, day date, cost double, PRIMARY KEY (org_id, day))"

@@ -32,24 +32,26 @@ def ingest_source(spark: SparkSession, settings: Settings, source: Source, inges
         .withColumn(ROW_ORDER_COL, monotonically_increasing_id())
         .cache()
     )
-    valid, quarantine = split_by_rules(raw, bronze_structural_rules(source))
-    bronze = dedupe_last_wins(valid, source.natural_key).drop(CORRUPT_RECORD_COL, ROW_ORDER_COL)
+    try:
+        valid, quarantine = split_by_rules(raw, bronze_structural_rules(source))
+        bronze = dedupe_last_wins(valid, source.natural_key).drop(CORRUPT_RECORD_COL, ROW_ORDER_COL)
 
-    write_dataset(bronze, settings, "bronze", source.name)
-    write_dataset(quarantine.drop(ROW_ORDER_COL), settings, "quarantine", source.name)
+        write_dataset(bronze, settings, "bronze", source.name)
+        write_dataset(quarantine.drop(ROW_ORDER_COL), settings, "quarantine", source.name)
 
-    data_cols = [field.name for field in source.schema.fields]
-    valid_rows = valid.count()
-    distinct_rows = valid.select(*data_cols).distinct().count()
-    counts = {
-        "read": raw.count(),
-        "quarantine": quarantine.count(),
-        "written": bronze.count(),
-    }
+        data_cols = [field.name for field in source.schema.fields]
+        valid_rows = valid.count()
+        distinct_rows = valid.select(*data_cols).distinct().count()
+        counts = {
+            "read": raw.count(),
+            "quarantine": quarantine.count(),
+            "written": bronze.count(),
+        }
+    finally:
+        raw.unpersist()
     counts["exact_duplicates"] = valid_rows - distinct_rows
     counts["key_conflicts"] = distinct_rows - counts["written"]
     counts["duplicates"] = counts["exact_duplicates"] + counts["key_conflicts"]
-    raw.unpersist()
     if counts["key_conflicts"]:
         log.warning("bronze/%s: %d versiones descartadas por conflicto de clave %s (gana la última)",
                     source.name, counts["key_conflicts"], source.natural_key)

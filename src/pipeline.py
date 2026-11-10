@@ -3,6 +3,7 @@ import importlib
 import logging
 import sys
 import time
+from collections.abc import Callable
 
 from src.common.logging_setup import setup_logging
 from src.config import load_settings, new_run_id
@@ -18,15 +19,24 @@ STEPS: dict[str, str] = {
 }
 
 
-def _resolve(step: str):
+def _resolve(step: str) -> Callable[..., object]:
+    """Importa el módulo del paso y devuelve su función ``run(spark, settings)``.
+
+    Raises:
+        NotImplementedError: Si el módulo del paso no existe o no define ``run``.
+    """
     module_name = STEPS[step]
+    missing_message = f"Paso {step!r} sin implementar: falta {module_name}.run"
     try:
         module = importlib.import_module(module_name)
-    except ModuleNotFoundError as exc:
-        if exc.name == module_name:
-            raise NotImplementedError(f"Paso {step!r} sin implementar: falta {module_name}.run") from exc
+    except ModuleNotFoundError as error:
+        if error.name == module_name:
+            raise NotImplementedError(missing_message) from error
         raise
-    return module.run
+    step_runner = getattr(module, "run", None)
+    if not callable(step_runner):
+        raise NotImplementedError(missing_message)
+    return step_runner
 
 
 def run_steps(steps: list[str], run_id: str | None = None) -> None:

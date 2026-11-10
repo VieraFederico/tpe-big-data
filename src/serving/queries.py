@@ -3,6 +3,7 @@ import csv
 import logging
 import sys
 import time
+from collections.abc import Callable
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
 from pathlib import Path
@@ -102,19 +103,50 @@ def format_table(columns: list[str], rows: list[tuple], max_rows: int = 50) -> s
     return "\n".join(out)
 
 
-def _parse_value(raw: str) -> Any:
-    for cast in (int, float):
-        try:
-            return cast(raw)
-        except ValueError:
-            pass
-    return raw
+PARAM_TYPES: dict[str, Callable[[str], Any]] = {"str": str, "int": int, "float": float}
+
+
+def parse_param(item: str) -> tuple[str, Any]:
+    """Parsea un parámetro de consulta con la forma CLAVE=VALOR o CLAVE:TIPO=VALOR.
+
+    Por defecto el valor queda como texto: adivinar el tipo hacía que, por ejemplo,
+    un id "123" se mandara como int y Cassandra lo rechazara contra una columna text.
+
+    Args:
+        item: Texto tal como llega en ``-p``, p. ej. ``org_id=org_001`` o ``limit:int=10``.
+
+    Returns:
+        Tupla (clave, valor convertido al tipo pedido).
+
+    Raises:
+        ValueError: Si falta el ``=``, la clave está vacía, el tipo no existe o el
+            valor no se puede convertir.
+    """
+    key_spec, separator, raw_value = item.partition("=")
+    key, _, type_name = key_spec.partition(":")
+    if not separator or not key:
+        raise ValueError(f"Parámetro inválido {item!r}: usar CLAVE=VALOR o CLAVE:TIPO=VALOR")
+
+    type_name = type_name or "str"
+    if type_name not in PARAM_TYPES:
+        raise ValueError(f"Tipo {type_name!r} desconocido en {item!r}; usar uno de {list(PARAM_TYPES)}")
+    try:
+        return key, PARAM_TYPES[type_name](raw_value)
+    except ValueError as error:
+        raise ValueError(f"El valor {raw_value!r} de {key!r} no es {type_name}") from error
 
 
 def main(argv: list[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Ejecuta una consulta CQL y guarda la evidencia.")
     parser.add_argument("cql_file", type=Path)
-    parser.add_argument("-p", "--param", action="append", default=[], metavar="CLAVE=VALOR")
+    parser.add_argument(
+        "-p",
+        "--param",
+        action="append",
+        default=[],
+        metavar="CLAVE[:TIPO]=VALOR",
+        help=f"Parámetro de la consulta; TIPO es uno de {list(PARAM_TYPES)} (default: str)",
+    )
     parser.add_argument("--name", help="Nombre de la evidencia (default: nombre del archivo)")
     parser.add_argument("--evidence-dir", type=Path, default=DEFAULT_EVIDENCE_DIR)
     parser.add_argument("--max-rows", type=int, default=1000)
@@ -122,10 +154,11 @@ def main(argv: list[str] | None = None) -> int:
 
     params = {}
     for item in args.param:
-        key, sep, value = item.partition("=")
-        if not sep:
-            parser.error(f"Parámetro inválido {item!r}: usar CLAVE=VALOR")
-        params[key] = _parse_value(value)
+        try:
+            key, value = parse_param(item)
+        except ValueError as error:
+            parser.error(str(error))
+        params[key] = value
 
     from src.serving.cassandra_client import session_scope
 

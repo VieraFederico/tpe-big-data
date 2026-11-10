@@ -28,39 +28,53 @@ def _default_profile(local_dc: str | None) -> dict:
 
 
 def get_session(settings: Settings | None = None) -> Session:
-    s = settings or load_settings()
+    """Abre una sesión CQL contra Astra o la Cassandra local, ya posicionada en el keyspace.
 
-    if s.serving_target == "astra":
+    Si algo falla después de crear el ``Cluster`` (conexión, creación o selección del
+    keyspace), el cluster se cierra antes de propagar el error para no dejar hilos vivos.
+
+    Raises:
+        RuntimeError: Si el keyspace no existe (en Astra se crea desde la UI).
+    """
+    resolved_settings = settings or load_settings()
+    is_astra = resolved_settings.serving_target == "astra"
+
+    if is_astra:
         cluster = Cluster(
-            cloud={"secure_connect_bundle": ensure_bundle(s)},
-            auth_provider=PlainTextAuthProvider("token", s.astra_token),
+            cloud={"secure_connect_bundle": ensure_bundle(resolved_settings)},
+            auth_provider=PlainTextAuthProvider("token", resolved_settings.astra_token),
             protocol_version=4,
             execution_profiles=_default_profile(local_dc=None),
         )
-        session = cluster.connect()
     else:
         cluster = Cluster(
-            [s.cassandra_host],
-            port=s.cassandra_port,
+            [resolved_settings.cassandra_host],
+            port=resolved_settings.cassandra_port,
             protocol_version=5,
             execution_profiles=_default_profile(local_dc="datacenter1"),
         )
-        session = cluster.connect()
-        session.execute(
-            f"CREATE KEYSPACE IF NOT EXISTS {s.keyspace} "
-            "WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}"
-        )
 
     try:
-        session.set_keyspace(s.keyspace)
-    except InvalidRequest as exc:
+        session = cluster.connect()
+        if not is_astra:
+            session.execute(
+                f"CREATE KEYSPACE IF NOT EXISTS {resolved_settings.keyspace} "
+                "WITH replication = {'class': 'SimpleStrategy', 'replication_factor': 1}"
+            )
+        session.set_keyspace(resolved_settings.keyspace)
+    except InvalidRequest as error:
         cluster.shutdown()
         raise RuntimeError(
-            f"El keyspace {s.keyspace!r} no existe en {s.serving_target}. "
+            f"El keyspace {resolved_settings.keyspace!r} no existe en "
+            f"{resolved_settings.serving_target}. "
             "En Astra hay que crearlo desde la UI (ver infra/README.md)."
-        ) from exc
+        ) from error
+    except BaseException:
+        cluster.shutdown()
+        raise
 
-    log.info("Sesión CQL abierta (target=%s, keyspace=%s)", s.serving_target, s.keyspace)
+    log.info("Sesión CQL abierta (target=%s, keyspace=%s)",
+             resolved_settings.serving_target, resolved_settings.keyspace)
     return session
 
 

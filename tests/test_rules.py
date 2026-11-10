@@ -1,3 +1,4 @@
+import pytest
 from pyspark.sql.functions import col
 
 from src.quality.rules import QUARANTINE_TS_COL, REASON_COL, RULE_ID_COL, Rule, any_null, split_by_rules
@@ -54,6 +55,17 @@ def test_sin_reglas_todo_es_valido(spark):
 
     assert valid.count() == df.count()
     assert quarantine.count() == 0
+
+
+def test_sin_reglas_la_quarantine_mantiene_su_esquema(spark):
+    _, quarantine = split_by_rules(_df(spark), [])
+
+    assert {RULE_ID_COL, REASON_COL, QUARANTINE_TS_COL} <= set(quarantine.columns)
+
+
+def test_any_null_sin_columnas_falla():
+    with pytest.raises(ValueError, match="al menos una columna"):
+        any_null(())
 
 
 def test_any_null(spark):

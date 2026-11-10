@@ -37,12 +37,16 @@ def build_stream(spark: SparkSession, settings: Settings) -> DataFrame:
 def write_micro_batch(settings: Settings):
     def _write(batch_df: DataFrame, batch_id: int) -> None:
         batch_df.persist()
-        valid, quarantine = split_by_rules(batch_df, bronze_event_rules())
-        write_dataset(valid.drop(CORRUPT_RECORD_COL), settings, "bronze", USAGE_EVENTS.name,
-                      partition_by=(EVENT_DATE,), mode="append", use_rebalance=False)
-        write_dataset(quarantine, settings, "quarantine", USAGE_EVENTS.name, mode="append", use_rebalance=False)
-        log.info("Micro-lote %d: %d a bronze, %d a quarantine", batch_id, valid.count(), quarantine.count())
-        batch_df.unpersist()
+        try:
+            valid, quarantine = split_by_rules(batch_df, bronze_event_rules())
+            write_dataset(valid.drop(CORRUPT_RECORD_COL), settings, "bronze", USAGE_EVENTS.name,
+                          partition_by=(EVENT_DATE,), mode="append", use_rebalance=False)
+            write_dataset(quarantine, settings, "quarantine", USAGE_EVENTS.name,
+                          mode="append", use_rebalance=False)
+            log.info("Micro-lote %d: %d a bronze, %d a quarantine",
+                     batch_id, valid.count(), quarantine.count())
+        finally:
+            batch_df.unpersist()
 
     return _write
 

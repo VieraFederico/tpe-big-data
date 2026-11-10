@@ -25,21 +25,34 @@ def database_id_from_endpoint(endpoint: str) -> str:
         )
     return match.group(1)
 
-# Descarga y garantiza que este el secure bundle necesario para astra cloud
-# Esto trae un certificado y etc necesarios para poder correr CQL contra astra
-# La idea es que lo descargue automaticamente si no existe o si no se usa la env var
-# De forma que el proceso sea transparente y simple
 def ensure_bundle(settings: Settings) -> str:
+    """Devuelve la ruta del secure connect bundle de Astra, descargándolo si hace falta.
+
+    El bundle trae los certificados necesarios para conectarse por CQL. Si
+    ASTRA_DB_SECURE_BUNDLE_PATH apunta a un archivo existente se usa ese; si no, se
+    descarga con la DevOps API, así el proceso es transparente para quien corre el pipeline.
+
+    Raises:
+        ValueError: Si no hay bundle y falta el endpoint o el token para descargarlo.
+        RuntimeError: Si la DevOps API de Astra responde con error.
+    """
     if settings.astra_bundle_path and Path(settings.astra_bundle_path).is_file():
         return settings.astra_bundle_path
 
-    db_id = database_id_from_endpoint(settings.astra_api_endpoint or "")
+    if not settings.astra_api_endpoint:
+        raise ValueError(
+            "No hay secure connect bundle en ASTRA_DB_SECURE_BUNDLE_PATH y falta "
+            "ASTRA_DB_API_ENDPOINT para descargarlo"
+        )
+    db_id = database_id_from_endpoint(settings.astra_api_endpoint)
     target = Path(settings.astra_bundle_path or REPO_ROOT / "secrets" / f"secure-connect-{db_id}.zip")
     if target.is_file():
         return str(target)
 
+    if not settings.astra_token:
+        raise ValueError("Falta ASTRA_DB_APPLICATION_TOKEN para descargar el secure connect bundle")
     log.info("Descargando secure connect bundle de la base %s", db_id)
-    download_url = _request_download_url(db_id, settings.astra_token or "")
+    download_url = _request_download_url(db_id, settings.astra_token)
     _download(download_url, target)
     log.info("Bundle guardado en %s", target)
     return str(target)

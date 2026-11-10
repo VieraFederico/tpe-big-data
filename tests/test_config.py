@@ -1,9 +1,10 @@
 import re
+from dataclasses import replace
 
 import pytest
 
 from src.config import load_settings
-from src.serving.astra_bundle import database_id_from_endpoint
+from src.serving.astra_bundle import database_id_from_endpoint, ensure_bundle
 
 DB_ID = "0123abcd-0123-4567-89ab-0123456789ab"
 
@@ -65,6 +66,29 @@ def test_db_id_desde_endpoint():
 def test_endpoint_invalido():
     with pytest.raises(ValueError):
         database_id_from_endpoint("https://algo.com")
+
+
+def test_bundle_sin_endpoint_explica_que_falta(settings):
+    with pytest.raises(ValueError, match="falta ASTRA_DB_API_ENDPOINT"):
+        ensure_bundle(settings)
+
+
+def test_bundle_sin_token_explica_que_falta(settings, tmp_path):
+    astra_settings = replace(
+        settings,
+        astra_api_endpoint=f"https://{DB_ID}-us-east1.apps.astra.datastax.com",
+        astra_bundle_path=str(tmp_path / "bundle.zip"),
+    )
+
+    with pytest.raises(ValueError, match="Falta ASTRA_DB_APPLICATION_TOKEN"):
+        ensure_bundle(astra_settings)
+
+
+def test_bundle_existente_se_usa_sin_descargar(settings, tmp_path):
+    bundle = tmp_path / "bundle.zip"
+    bundle.write_bytes(b"zip")
+
+    assert ensure_bundle(replace(settings, astra_bundle_path=str(bundle))) == str(bundle)
 
 
 def test_run_id_se_genera_si_no_se_pasa():

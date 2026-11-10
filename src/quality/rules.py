@@ -2,7 +2,8 @@ from dataclasses import dataclass
 from functools import reduce
 
 from pyspark.sql import Column, DataFrame
-from pyspark.sql.functions import coalesce, col, create_map, current_timestamp, lit, when
+from pyspark.sql.functions import coalesce, col, current_timestamp, lit, when
+from pyspark.sql.types import StringType
 
 RULE_ID_COL = "_rule_id"
 REASON_COL = "_reason"
@@ -17,25 +18,47 @@ class Rule:
 
 
 def split_by_rules(df: DataFrame, rules: list[Rule]) -> tuple[DataFrame, DataFrame]:
-    if not rules:
-        return df, df.limit(0)
+    """Separa las filas válidas de las que violan alguna regla.
 
-    rule_id = reduce(
-        lambda expression, rule: expression.when(coalesce(rule.violation, lit(False)), lit(rule.rule_id)),
-        rules[1:],
-        when(coalesce(rules[0].violation, lit(False)), lit(rules[0].rule_id)),
-    )
-    reasons = create_map(*[item for rule in rules for item in (lit(rule.rule_id), lit(rule.reason))])
+    Cada fila en cuarentena se etiqueta con la primera regla que viola (en el orden
+    de ``rules``). Una violación que evalúa a null no cuenta como violación.
 
-    tagged = df.withColumn(RULE_ID_COL, rule_id)
+    Args:
+        df: Datos a validar.
+        rules: Reglas a aplicar, en orden de prioridad. Puede estar vacía.
+
+    Returns:
+        Tupla (válidas, cuarentena). La cuarentena siempre trae las columnas
+        RULE_ID_COL, REASON_COL y QUARANTINE_TS_COL, aunque no haya reglas.
+    """
+    first_violated_rule_id = lit(None).cast(StringType())
+    first_violated_reason = lit(None).cast(StringType())
+    # Se arma de atrás para adelante para que la primera regla quede como la condición externa.
+    for rule in reversed(rules):
+        is_violated = coalesce(rule.violation, lit(False))
+        first_violated_rule_id = when(is_violated, lit(rule.rule_id)).otherwise(first_violated_rule_id)
+        first_violated_reason = when(is_violated, lit(rule.reason)).otherwise(first_violated_reason)
+
+    tagged = df.withColumn(RULE_ID_COL, first_violated_rule_id)
     valid = tagged.filter(col(RULE_ID_COL).isNull()).drop(RULE_ID_COL)
     quarantine = (
         tagged.filter(col(RULE_ID_COL).isNotNull())
-        .withColumn(REASON_COL, reasons[col(RULE_ID_COL)])
+        .withColumn(REASON_COL, first_violated_reason)
         .withColumn(QUARANTINE_TS_COL, current_timestamp())
     )
     return valid, quarantine
 
 
 def any_null(columns: tuple[str, ...] | list[str]) -> Column:
-    return reduce(lambda condition, name: condition | col(name).isNull(), columns[1:], col(columns[0]).isNull())
+    """Condición verdadera si al menos una de las columnas es null.
+
+    Raises:
+        ValueError: Si no se pasa ninguna columna.
+    """
+    if not columns:
+        raise ValueError("any_null necesita al menos una columna")
+    return reduce(
+        lambda condition, name: condition | col(name).isNull(),
+        columns[1:],
+        col(columns[0]).isNull(),
+    )

@@ -1,10 +1,10 @@
 from datetime import datetime, timezone
 from pathlib import Path
 
-from pyspark.sql import functions as F
+from pyspark.sql.functions import col, lit
 from pyspark.sql.types import IntegerType, StringType, StructField, StructType
 
-from src.bronze.batch.ingest import ingest_source
+from src.bronze.batch.ingest import ROW_ORDER_COL, ingest_source
 from src.common.columns import INGEST_DATE, INGEST_TS, SOURCE_FILE
 from src.common.lake import dataset_storage_stats, read_dataset
 from src.common.schemas import CORRUPT_RECORD_COL, Source
@@ -29,14 +29,17 @@ c,no_es_numero
 
 def _ingest(spark, settings):
     Path(settings.zone_path("landing"), SOURCE.path).write_text(CSV, encoding="utf-8")
-    ts = F.lit(datetime(2026, 11, 8, tzinfo=timezone.utc)).cast("timestamp")
+    ts = lit(datetime(2026, 11, 8, tzinfo=timezone.utc)).cast("timestamp")
     return ingest_source(spark, settings, SOURCE, ts)
 
 
 def test_conteos(spark, settings):
     counts = _ingest(spark, settings)
 
-    assert counts == {"read": 5, "quarantine": 2, "written": 2, "duplicates": 1}
+    assert counts == {
+        "read": 5, "quarantine": 2, "written": 2,
+        "exact_duplicates": 1, "key_conflicts": 0, "duplicates": 1,
+    }
 
 
 def test_bronze_deduplica_y_agrega_columnas_tecnicas(spark, settings):
@@ -46,7 +49,7 @@ def test_bronze_deduplica_y_agrega_columnas_tecnicas(spark, settings):
     assert sorted(r.id for r in bronze.collect()) == ["a", "b"]
     assert {INGEST_TS, INGEST_DATE, SOURCE_FILE} <= set(bronze.columns)
     assert CORRUPT_RECORD_COL not in bronze.columns
-    assert bronze.filter(F.col(SOURCE_FILE).endswith(SOURCE.path)).count() == 2
+    assert bronze.filter(col(SOURCE_FILE).endswith(SOURCE.path)).count() == 2
 
 
 def test_quarantine_por_tipo_invalido_y_clave_nula(spark, settings):
@@ -54,8 +57,26 @@ def test_quarantine_por_tipo_invalido_y_clave_nula(spark, settings):
     quarantine = read_dataset(spark, settings, "quarantine", SOURCE.name)
 
     assert sorted(r[RULE_ID_COL] for r in quarantine.collect()) == ["BRZ_NULL_KEY", "BRZ_PARSE"]
-    corrupt = quarantine.filter(F.col(RULE_ID_COL) == "BRZ_PARSE").first()
+    corrupt = quarantine.filter(col(RULE_ID_COL) == "BRZ_PARSE").first()
     assert corrupt[CORRUPT_RECORD_COL] == "c,no_es_numero"
+
+
+def test_conflicto_de_clave_gana_la_ultima_aparicion(spark, settings):
+    # x aparece 3 veces con distinto qty: debe quedar la última (3)
+    csv = """id,qty
+x,1
+y,5
+x,2
+x,3
+"""
+    Path(settings.zone_path("landing"), SOURCE.path).write_text(csv, encoding="utf-8")
+    ts = lit(datetime(2026, 11, 8, tzinfo=timezone.utc)).cast("timestamp")
+    counts = ingest_source(spark, settings, SOURCE, ts)
+
+    bronze = {r.id: r.qty for r in read_dataset(spark, settings, "bronze", SOURCE.name).collect()}
+    assert bronze == {"x": 3, "y": 5}
+    assert (counts["exact_duplicates"], counts["key_conflicts"]) == (0, 2)
+    assert ROW_ORDER_COL not in read_dataset(spark, settings, "bronze", SOURCE.name).columns
 
 
 def test_reejecutar_no_duplica(spark, settings):

@@ -1,7 +1,7 @@
 import json
 from pathlib import Path
 
-from pyspark.sql import functions as F
+from pyspark.sql.functions import col
 
 from src.bronze.streaming import ingest
 from src.common.lake import read_dataset
@@ -85,4 +85,4 @@ def test_evento_tardio_se_descarta_por_watermark(spark, settings):
 
     assert stats["dropped_by_watermark"] == 1
     assert _bronze_ids(spark, settings) == ["nuevo"]
-    assert read_dataset(spark, settings, "bronze", USAGE_EVENTS.name).filter(F.col("event_id") == "viejo").count() == 0
+    assert read_dataset(spark, settings, "bronze", USAGE_EVENTS.name).filter(col("event_id") == "viejo").count() == 0

@@ -2,7 +2,7 @@ import logging
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.errors import AnalysisException
-from pyspark.sql import functions as F
+from pyspark.sql.functions import coalesce, col, sha2, struct, to_date, to_json, to_timestamp
 
 from src.common.columns import with_technical_columns
 from src.common.lake import dataset_storage_stats, read_dataset, write_dataset
@@ -22,11 +22,11 @@ def build_stream(spark: SparkSession, settings: Settings) -> DataFrame:
     source_cols = [f.name for f in USAGE_EVENTS.read_schema().fields]
     return (
         with_technical_columns(read_usage_events_stream(spark, settings, MAX_FILES_PER_TRIGGER))
-        .withColumn("event_ts", F.to_timestamp("timestamp"))
-        .withColumn("event_date", F.to_date("event_ts"))
+        .withColumn("event_ts", to_timestamp("timestamp"))
+        .withColumn("event_date", to_date("event_ts"))
         .withColumn(
             "_dedupe_key",
-            F.coalesce(F.col("event_id"), F.sha2(F.to_json(F.struct(*source_cols)), 256)),
+            coalesce(col("event_id"), sha2(to_json(struct(*source_cols)), 256)),
         )
         .withWatermark("event_ts", WATERMARK)
         .dropDuplicatesWithinWatermark(["_dedupe_key"])

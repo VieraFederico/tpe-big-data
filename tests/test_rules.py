@@ -1,4 +1,4 @@
-from pyspark.sql import functions as F
+from pyspark.sql.functions import col
 
 from src.quality.rules import QUARANTINE_TS_COL, REASON_COL, RULE_ID_COL, Rule, any_null, split_by_rules
 
@@ -13,8 +13,8 @@ def _df(spark):
 def _rules():
     # Las Column necesitan una sesión activa: se arman adentro de cada test.
     return [
-        Rule("NULL_ID", "id nulo", F.col("id").isNull()),
-        Rule("NEG", "n negativo", F.col("n") < 0),
+        Rule("NULL_ID", "id nulo", col("id").isNull()),
+        Rule("NEG", "n negativo", col("n") < 0),
     ]
 
 
@@ -43,7 +43,7 @@ def test_quarantine_trae_motivo_y_timestamp(spark):
     valid, quarantine = split_by_rules(_df(spark), _rules())
 
     assert RULE_ID_COL not in valid.columns
-    row = quarantine.filter(F.col(RULE_ID_COL) == "NEG").first()
+    row = quarantine.filter(col(RULE_ID_COL) == "NEG").first()
     assert row[REASON_COL] == "n negativo"
     assert row[QUARANTINE_TS_COL] is not None
 

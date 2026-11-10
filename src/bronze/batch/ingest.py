@@ -1,10 +1,10 @@
 import logging
 from datetime import datetime, timezone
 
-from pyspark.sql import Column, SparkSession
-from pyspark.sql import functions as F
+from pyspark.sql import Column, DataFrame, SparkSession, Window
+from pyspark.sql.functions import col, lit, monotonically_increasing_id, row_number
 
-from src.common.columns import with_technical_columns
+from src.common.columns import SOURCE_FILE, with_technical_columns
 from src.common.lake import dataset_storage_stats, write_dataset
 from src.common.readers import read_csv_source
 from src.common.schemas import CORRUPT_RECORD_COL, SOURCES, Source
@@ -16,21 +16,45 @@ log = logging.getLogger(__name__)
 
 MASTER_DATA = ("customers_orgs", "users", "billing_monthly")
 
+# Posición de la fila en el archivo de origen. Sirve para desempatar idempotentemente entre versiones de la misma clave en un mismo archivo.
+ROW_ORDER_COL = "_row_order"
+
+def dedupe_last_wins(df: DataFrame, natural_key: tuple[str, ...]) -> DataFrame:
+    window = Window.partitionBy(*natural_key).orderBy(col(SOURCE_FILE).desc(), col(ROW_ORDER_COL).desc())
+    return (
+        df.withColumn("_position_in_key", row_number().over(window))
+        .filter(col("_position_in_key") == 1)
+        .drop("_position_in_key")
+    )
+
+
 def ingest_source(spark: SparkSession, settings: Settings, source: Source, ingest_ts: Column) -> dict:
-    raw = with_technical_columns(read_csv_source(spark, source, settings), ingest_ts).cache()
+    raw = (
+        with_technical_columns(read_csv_source(spark, source, settings), ingest_ts)
+        .withColumn(ROW_ORDER_COL, monotonically_increasing_id())
+        .cache()
+    )
     valid, quarantine = split_by_rules(raw, bronze_structural_rules(source))
-    bronze = valid.dropDuplicates(list(source.natural_key)).drop(CORRUPT_RECORD_COL)
+    bronze = dedupe_last_wins(valid, source.natural_key).drop(CORRUPT_RECORD_COL, ROW_ORDER_COL)
 
     write_dataset(bronze, settings, "bronze", source.name)
-    write_dataset(quarantine, settings, "quarantine", source.name)
+    write_dataset(quarantine.drop(ROW_ORDER_COL), settings, "quarantine", source.name)
 
+    data_cols = [f.name for f in source.schema.fields]
+    valid_rows = valid.count()
+    distinct_rows = valid.select(*data_cols).distinct().count()
     counts = {
         "read": raw.count(),
         "quarantine": quarantine.count(),
         "written": bronze.count(),
     }
-    counts["duplicates"] = counts["read"] - counts["quarantine"] - counts["written"]
+    counts["exact_duplicates"] = valid_rows - distinct_rows
+    counts["key_conflicts"] = distinct_rows - counts["written"]
+    counts["duplicates"] = counts["exact_duplicates"] + counts["key_conflicts"]
     raw.unpersist()
+    if counts["key_conflicts"]:
+        log.warning("bronze/%s: %d versiones descartadas por conflicto de clave %s (gana la última)",
+                    source.name, counts["key_conflicts"], source.natural_key)
     log.info("bronze/%s: %s", source.name, counts)
     for zone in ("bronze", "quarantine"):
         log.info("%s/%s (en disco) -> %s", zone, source.name, dataset_storage_stats(settings, zone, source.name))
@@ -38,5 +62,5 @@ def ingest_source(spark: SparkSession, settings: Settings, source: Source, inges
 
 
 def run(spark: SparkSession, settings: Settings) -> dict[str, dict]:
-    ingest_ts = F.lit(datetime.now(timezone.utc)).cast("timestamp")
+    ingest_ts = lit(datetime.now(timezone.utc)).cast("timestamp")
     return {name: ingest_source(spark, settings, SOURCES[name], ingest_ts) for name in MASTER_DATA}

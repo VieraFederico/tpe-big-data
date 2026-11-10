@@ -35,4 +35,5 @@ ignore_missing_imports = true  # cassandra-driver no trae tipos
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
+markers = ["integration: necesita una Cassandra levantada (se saltea si no hay)"]
 pythonpath = ["."]

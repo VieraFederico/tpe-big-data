@@ -7,6 +7,10 @@ INGEST_DATE = "ingest_date"
 SOURCE_FILE = "source_file"
 RUN_ID = "run_id"
 
+# Columnas derivadas del timestamp de los eventos
+EVENT_TS = "event_ts"
+EVENT_DATE = "event_date"
+
 
 def with_technical_columns(df: DataFrame, run_id: str, ingest_ts: Column | None = None) -> DataFrame:
     timestamp = ingest_ts if ingest_ts is not None else current_timestamp()

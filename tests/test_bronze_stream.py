@@ -77,6 +77,22 @@ def test_reejecucion_es_idempotente_y_recuerda_duplicados(spark, settings):
     assert _bronze_ids(spark, settings) == ["e1", "e2", "e3"]
 
 
+def test_timestamp_invalido_o_nulo_va_a_quarantine(spark, settings):
+    _write_part(settings, "events_part_0000.jsonl", [
+        _event("ok"),
+        _event("fecha_rota", ts="no-es-una-fecha"),
+        _event("sin_fecha", ts=None),
+        "{esto no es json",      # corrupta: se reporta como BRZ_PARSE, no como BRZ_BAD_TS
+    ])
+
+    ingest.run(spark, settings)
+
+    assert _bronze_ids(spark, settings) == ["ok"]
+    quarantine = read_dataset(spark, settings, "quarantine", USAGE_EVENTS.name)
+    rules_by_event = {row.event_id: row[RULE_ID_COL] for row in quarantine.collect()}
+    assert rules_by_event == {"fecha_rota": "BRZ_BAD_TS", "sin_fecha": "BRZ_BAD_TS", None: "BRZ_PARSE"}
+
+
 def test_evento_tardio_se_descarta_por_watermark(spark, settings):
     _write_part(settings, "events_part_0000.jsonl", [_event("nuevo", ts="2025-09-30T00:00:00Z")])
     ingest.run(spark, settings)

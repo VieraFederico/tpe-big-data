@@ -37,6 +37,9 @@ NPS_SCORE_RANGE = (-100.0, 100.0)
 CSAT_RANGE = (1.0, 5.0)
 USD_CURRENCY = "USD"
 
+MATCHED_ORG_ID_COL = "_matched_org_id"
+MATCHED_RESOURCE_ID_COL = "_matched_resource_id"
+
 
 def bronze_structural_rules(source: Source) -> list[Rule]:
     """Reglas base de Bronze: la fila parsea con el esquema y tiene clave natural."""
@@ -117,6 +120,21 @@ def silver_event_flags() -> list[Flag]:
             "COST_NEGATIVE_SMALL",
             f"cost_usd_increment negativo pero mayor o igual a {MIN_ACCEPTED_COST}",
             (cost >= MIN_ACCEPTED_COST) & (cost < 0),
+        ),
+    ]
+
+
+def silver_enrichment_flags() -> list[Flag]:
+    return [
+        Flag(
+            "ORG_ORPHAN",
+            "org_id sin organización en silver/customers_orgs",
+            col(MATCHED_ORG_ID_COL).isNull(),
+        ),
+        Flag(
+            "RESOURCE_ORPHAN",
+            "resource_id sin recurso en silver/resources",
+            col(MATCHED_RESOURCE_ID_COL).isNull(),
         ),
     ]
 

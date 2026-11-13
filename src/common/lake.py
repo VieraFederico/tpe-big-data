@@ -14,6 +14,8 @@ log = logging.getLogger(__name__)
 
 BYTES_PER_MB = 1_000_000
 
+PARTITION_OVERWRITE_MODE_OPTION = "partitionOverwriteMode"
+
 
 def dataset_path(settings: Settings, zone: Zone, dataset: str) -> str:
     """Ruta de un dataset dentro de una zona del lake, p. ej. ``<lake>/bronze/users``."""
@@ -62,6 +64,7 @@ def write_dataset(
     partition_by: tuple[str, ...] = (INGEST_DATE,),
     mode: str = "overwrite",
     use_rebalance: bool = True,
+    replace_all_partitions: bool = False,
 ) -> str:
     """Escribe un dataset como parquet particionado.
 
@@ -77,6 +80,8 @@ def write_dataset(
         mode: Modo de escritura de Spark (``overwrite`` o ``append``).
         use_rebalance: True usa REBALANCE (AQE ajusta el tamaño de los archivos);
             False usa ``repartition``, que es lo que conviene en micro-lotes chicos.
+        replace_all_partitions: True hace que ``overwrite`` borre todas las particiones
+            existentes, no solo las que se escriben (sin cambiar la configuración de la sesión).
 
     Returns:
         Ruta donde quedó escrito el dataset.
@@ -85,7 +90,10 @@ def write_dataset(
     distributed = (
         rebalance_by(df, partition_by) if use_rebalance else df.repartition(*partition_by)
     )
-    distributed.write.mode(mode).partitionBy(*partition_by).parquet(path)
+    writer = distributed.write.mode(mode).partitionBy(*partition_by)
+    if replace_all_partitions:
+        writer = writer.option(PARTITION_OVERWRITE_MODE_OPTION, "static")
+    writer.parquet(path)
     return path
 
 

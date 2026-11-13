@@ -9,7 +9,7 @@ from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import coalesce, col, sha2, struct, to_date, to_json, try_to_timestamp
 
 from src.common.columns import EVENT_DATE, EVENT_TS, with_technical_columns
-from src.common.lake import log_storage_stats, read_dataset, write_dataset
+from src.common.lake import log_storage_stats, quarantine_dataset, read_dataset, write_dataset
 from src.common.readers import read_usage_events_stream
 from src.common.schemas import CORRUPT_RECORD_COL, USAGE_EVENTS
 from src.config import Settings, Zone
@@ -20,6 +20,7 @@ log = logging.getLogger(__name__)
 
 WATERMARK = "61 days"
 MAX_FILES_PER_TRIGGER = 10
+QUARANTINE_DATASET = quarantine_dataset(Zone.BRONZE, USAGE_EVENTS.name)
 
 
 class BronzeStreamStats(TypedDict):
@@ -84,7 +85,7 @@ def write_micro_batch(settings: Settings) -> Callable[[DataFrame, int], None]:
                 quarantine,
                 settings,
                 Zone.QUARANTINE,
-                USAGE_EVENTS.name,
+                QUARANTINE_DATASET,
                 mode="append",
                 use_rebalance=False,
             )
@@ -100,10 +101,10 @@ def write_micro_batch(settings: Settings) -> Callable[[DataFrame, int], None]:
     return _write
 
 
-def _count_or_zero(spark: SparkSession, settings: Settings, zone: Zone) -> int:
-    """Filas de eventos escritas en la zona; 0 si todavía no existe el dataset."""
+def _count_or_zero(spark: SparkSession, settings: Settings, zone: Zone, dataset: str) -> int:
+    """Filas escritas en un dataset de la zona; 0 si todavía no existe."""
     try:
-        return read_dataset(spark, settings, zone, USAGE_EVENTS.name).count()
+        return read_dataset(spark, settings, zone, dataset).count()
     except AnalysisException:
         return 0
 
@@ -147,9 +148,10 @@ def run(spark: SparkSession, settings: Settings) -> BronzeStreamStats:
             state_operator.get("customMetrics", {}).get("numDroppedDuplicateRows", 0)
             for state_operator in state_operators
         ),
-        "bronze_total": _count_or_zero(spark, settings, Zone.BRONZE),
-        "quarantine_total": _count_or_zero(spark, settings, Zone.QUARANTINE),
+        "bronze_total": _count_or_zero(spark, settings, Zone.BRONZE, USAGE_EVENTS.name),
+        "quarantine_total": _count_or_zero(spark, settings, Zone.QUARANTINE, QUARANTINE_DATASET),
     }
     log.info("bronze/%s: %s", USAGE_EVENTS.name, stats)
-    log_storage_stats(settings, USAGE_EVENTS.name, (Zone.BRONZE, Zone.QUARANTINE))
+    log_storage_stats(settings, USAGE_EVENTS.name, (Zone.BRONZE,))
+    log_storage_stats(settings, QUARANTINE_DATASET, (Zone.QUARANTINE,))
     return stats

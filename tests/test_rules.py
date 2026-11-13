@@ -1,8 +1,12 @@
+import json
+
 import pytest
 from pyspark.sql.functions import col
 
+from src.common.schemas import CORRUPT_RECORD_COL
 from src.quality.rules import (
     QUARANTINE_TS_COL,
+    RAW_COL,
     REASON_COL,
     RULE_ID_COL,
     Rule,
@@ -67,7 +71,40 @@ def test_sin_reglas_todo_es_valido(spark):
 def test_sin_reglas_la_quarantine_mantiene_su_esquema(spark):
     _, quarantine = split_by_rules(_sample_df(spark), [])
 
-    assert {RULE_ID_COL, REASON_COL, QUARANTINE_TS_COL} <= set(quarantine.columns)
+    assert {RULE_ID_COL, REASON_COL, RAW_COL, QUARANTINE_TS_COL} <= set(quarantine.columns)
+
+
+def test_columnas_de_cuarentena_usan_los_nombres_del_contrato():
+    contract = (RULE_ID_COL, REASON_COL, RAW_COL, QUARANTINE_TS_COL)
+
+    assert contract == ("_rule_id", "_quarantine_reason", "_raw", "_quarantine_ts")
+
+
+def test_raw_de_fila_que_parseo_es_el_json_de_sus_columnas(spark):
+    _, quarantine = split_by_rules(_sample_df(spark), _rules())
+
+    raw_by_amount = {row.amount: json.loads(row[RAW_COL]) for row in quarantine.collect()}
+    # Las columnas nulas quedan explícitas en el JSON.
+    assert raw_by_amount[3] == {"id": None, "amount": 3}
+    assert raw_by_amount[-5] == {"id": "b", "amount": -5}
+
+
+def test_raw_de_fila_que_no_parseo_es_el_registro_corrupto(spark):
+    rows = spark.createDataFrame(
+        [(None, None, "a;;roto"), (None, 7, None)],
+        f"id string, amount int, {CORRUPT_RECORD_COL} string",
+    )
+    rules = [
+        Rule("PARSE", "no parsea", col(CORRUPT_RECORD_COL).isNotNull()),
+        Rule("NULL_ID", "id nulo", col("id").isNull()),
+    ]
+
+    _, quarantine = split_by_rules(rows, rules)
+
+    raw_by_rule = {row[RULE_ID_COL]: row[RAW_COL] for row in quarantine.collect()}
+    assert raw_by_rule["PARSE"] == "a;;roto"
+    # Si la fila parseó, el registro corrupto (null) no se incluye en el JSON.
+    assert json.loads(raw_by_rule["NULL_ID"]) == {"id": None, "amount": 7}
 
 
 def test_any_null_sin_columnas_falla():

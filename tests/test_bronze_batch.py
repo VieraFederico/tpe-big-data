@@ -1,3 +1,4 @@
+import json
 from datetime import UTC, datetime
 from pathlib import Path
 
@@ -7,10 +8,11 @@ from pyspark.sql.types import IntegerType, StringType, StructField, StructType
 from src.bronze.batch import ingest
 from src.bronze.batch.ingest import ROW_ORDER_COL, ingest_source
 from src.common.columns import INGEST_DATE, INGEST_TS, RUN_ID, SOURCE_FILE
-from src.common.lake import dataset_storage_stats, read_dataset
+from src.common.lake import dataset_storage_stats, quarantine_dataset, read_dataset
+from src.common.manifests import read_manifest
 from src.common.schemas import CORRUPT_RECORD_COL, SOURCES, Source
 from src.config import Zone
-from src.quality.rules import RULE_ID_COL
+from src.quality.rules import RAW_COL, REASON_COL, RULE_ID_COL
 
 SOURCE = Source(
     "things",
@@ -59,9 +61,15 @@ def test_bronze_deduplica_y_agrega_columnas_tecnicas(spark, settings):
     assert bronze.filter(col(SOURCE_FILE).endswith(SOURCE.path)).count() == 2
 
 
+def _quarantine(spark, settings):
+    return read_dataset(
+        spark, settings, Zone.QUARANTINE, quarantine_dataset(Zone.BRONZE, SOURCE.name)
+    )
+
+
 def test_quarantine_por_tipo_invalido_y_clave_nula(spark, settings):
     _ingest(spark, settings)
-    quarantine = read_dataset(spark, settings, Zone.QUARANTINE, SOURCE.name)
+    quarantine = _quarantine(spark, settings)
 
     assert sorted(row[RULE_ID_COL] for row in quarantine.collect()) == [
         "BRZ_NULL_KEY",
@@ -69,6 +77,32 @@ def test_quarantine_por_tipo_invalido_y_clave_nula(spark, settings):
     ]
     corrupt = quarantine.filter(col(RULE_ID_COL) == "BRZ_PARSE").first()
     assert corrupt[CORRUPT_RECORD_COL] == "c,no_es_numero"
+
+
+def test_quarantine_guarda_motivo_y_registro_original(spark, settings):
+    _ingest(spark, settings)
+    row_by_rule = {row[RULE_ID_COL]: row for row in _quarantine(spark, settings).collect()}
+
+    corrupt = row_by_rule["BRZ_PARSE"]
+    assert corrupt[RAW_COL] == corrupt[CORRUPT_RECORD_COL] == "c,no_es_numero"
+    assert corrupt[REASON_COL]
+
+    # La fila parseó pero tiene clave nula: el original es el JSON de sus columnas.
+    null_key = row_by_rule["BRZ_NULL_KEY"]
+    original = json.loads(null_key[RAW_COL])
+    assert original["id"] is None and original["qty"] == 4
+    assert original[SOURCE_FILE].endswith(SOURCE.path)
+    assert null_key[REASON_COL]
+
+
+def test_quarantine_queda_bajo_la_carpeta_de_su_capa(spark, settings):
+    _ingest(spark, settings)
+    quarantine_root = Path(settings.zone_path(Zone.QUARANTINE))
+
+    dataset_folder = quarantine_root / "bronze" / SOURCE.name
+    partitions = [path.name for path in dataset_folder.iterdir() if path.is_dir()]
+    assert partitions == ["ingest_date=2026-11-08"]
+    assert not (quarantine_root / SOURCE.name).exists()
 
 
 def test_conflicto_de_clave_gana_la_ultima_aparicion(spark, settings):
@@ -138,3 +172,21 @@ def test_run_ingesta_todas_las_fuentes_de_landing(spark, settings):
 
     assert set(results) == set(SOURCES)
     assert all(counts["read"] == 0 for counts in results.values())
+    manifest = read_manifest(settings, "bronze_batch")
+    assert manifest is not None
+    assert manifest["datasets"] == results
+
+
+def test_run_escribe_el_manifiesto_con_los_conteos_que_devuelve(spark, settings, monkeypatch):
+    monkeypatch.setattr(ingest, "SOURCES", {SOURCE.name: SOURCE})
+    Path(settings.zone_path(Zone.LANDING), SOURCE.path).write_text(CSV, encoding="utf-8")
+
+    results = ingest.run(spark, settings)
+
+    manifest = read_manifest(settings, "bronze_batch")
+    assert manifest is not None
+    assert manifest["run_id"] == settings.run_id
+    assert manifest["datasets"] == results
+    assert manifest["datasets"][SOURCE.name]["quarantine"] == 2
+    bronze = read_dataset(spark, settings, Zone.BRONZE, SOURCE.name)
+    assert {row[INGEST_DATE].isoformat() for row in bronze.collect()} == {manifest["ingest_date"]}

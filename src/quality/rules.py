@@ -5,12 +5,18 @@ from dataclasses import dataclass
 from functools import reduce
 
 from pyspark.sql import Column, DataFrame
-from pyspark.sql.functions import coalesce, col, current_timestamp, lit, when
+from pyspark.sql.functions import coalesce, col, current_timestamp, lit, struct, to_json, when
 from pyspark.sql.types import StringType
 
+from src.common.schemas import CORRUPT_RECORD_COL
+
+# Columnas que se agregan a toda fila en cuarentena, en cualquier capa.
 RULE_ID_COL = "_rule_id"
-REASON_COL = "_reason"
+REASON_COL = "_quarantine_reason"
+RAW_COL = "_raw"
 QUARANTINE_TS_COL = "_quarantine_ts"
+
+QUARANTINE_COLUMNS = (RULE_ID_COL, REASON_COL, RAW_COL, QUARANTINE_TS_COL)
 
 
 @dataclass(frozen=True)
@@ -40,8 +46,10 @@ def split_by_rules(df: DataFrame, rules: list[Rule]) -> tuple[DataFrame, DataFra
 
     Returns:
         Tupla (válidas, cuarentena). La cuarentena siempre trae las columnas
-        RULE_ID_COL, REASON_COL y QUARANTINE_TS_COL, aunque no haya reglas.
+        RULE_ID_COL, REASON_COL, RAW_COL y QUARANTINE_TS_COL, aunque no haya reglas.
+        RAW_COL guarda el registro original (ver ``original_record``).
     """
+    record = original_record(df)
     first_violated_rule_id = lit(None).cast(StringType())
     first_violated_reason = lit(None).cast(StringType())
     # Se arma de atrás para adelante para que la primera regla quede como la condición externa.
@@ -59,9 +67,31 @@ def split_by_rules(df: DataFrame, rules: list[Rule]) -> tuple[DataFrame, DataFra
     quarantine = (
         tagged.filter(col(RULE_ID_COL).isNotNull())
         .withColumn(REASON_COL, first_violated_reason)
+        .withColumn(RAW_COL, record)
         .withColumn(QUARANTINE_TS_COL, current_timestamp())
     )
     return valid, quarantine
+
+
+def original_record(df: DataFrame) -> Column:
+    """Expresión con el registro original de cada fila, para guardar en la cuarentena.
+
+    Si la fila no parseó, es el texto de CORRUPT_RECORD_COL. Si parseó, es el JSON de
+    todas las columnas de entrada (sin las columnas técnicas de cuarentena ni
+    CORRUPT_RECORD_COL, que en ese caso es null), con las columnas nulas explícitas.
+
+    Args:
+        df: Datos de entrada, tal como llegan a ``split_by_rules``.
+
+    Returns:
+        Columna de texto con el registro original.
+    """
+    excluded = {*QUARANTINE_COLUMNS, CORRUPT_RECORD_COL}
+    input_columns = [col(f"`{name}`") for name in df.columns if name not in excluded]
+    record_json = to_json(struct(*input_columns), {"ignoreNullFields": "false"})
+    if CORRUPT_RECORD_COL in df.columns:
+        return coalesce(col(CORRUPT_RECORD_COL), record_json)
+    return record_json
 
 
 def any_null(columns: Sequence[str]) -> Column:

@@ -11,6 +11,7 @@ from typing import Literal, cast, get_args
 from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
+DEFAULT_EVIDENCE_PATH = str(REPO_ROOT / "evidence")
 
 ServingTarget = Literal["local", "astra"]
 VALID_TARGETS: frozenset[str] = frozenset(get_args(ServingTarget))
@@ -57,6 +58,7 @@ class Settings:
         astra_token: Token de aplicación de Astra (solo para ``astra``).
         astra_api_endpoint: Endpoint de la base en Astra; se usa para descargar el bundle.
         astra_bundle_path: Ruta al secure connect bundle, si ya está descargado.
+        evidence_path: Carpeta donde los pasos dejan su evidencia (reportes, muestras).
         run_id: Id de la corrida; queda guardado en cada fila escrita.
     """
 
@@ -68,6 +70,7 @@ class Settings:
     astra_token: str | None
     astra_api_endpoint: str | None
     astra_bundle_path: str | None
+    evidence_path: str = DEFAULT_EVIDENCE_PATH
     run_id: str = field(default_factory=new_run_id)
 
     def zone_path(self, zone: Zone) -> str:
@@ -103,6 +106,7 @@ def load_settings(run_id: str | None = None) -> Settings:
         astra_token=os.getenv("ASTRA_DB_APPLICATION_TOKEN") or None,
         astra_api_endpoint=os.getenv("ASTRA_DB_API_ENDPOINT") or None,
         astra_bundle_path=os.getenv("ASTRA_DB_SECURE_BUNDLE_PATH") or None,
+        evidence_path=os.getenv("EVIDENCE_PATH") or DEFAULT_EVIDENCE_PATH,
         run_id=run_id or new_run_id(),
     )
 

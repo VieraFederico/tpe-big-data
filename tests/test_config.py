@@ -3,7 +3,7 @@ from dataclasses import replace
 
 import pytest
 
-from src.config import Zone, load_env_file, load_settings
+from src.config import REPO_ROOT, Zone, load_env_file, load_settings
 from src.serving.astra_bundle import database_id_from_endpoint, ensure_bundle
 
 DB_ID = "0123abcd-0123-4567-89ab-0123456789ab"
@@ -17,6 +17,7 @@ def clean_env(monkeypatch):
         "ASTRA_DB_API_ENDPOINT",
         "ASTRA_DB_SECURE_BUNDLE_PATH",
         "DATALAKE_PATH",
+        "EVIDENCE_PATH",
     ):
         monkeypatch.delenv(variable_name, raising=False)
 
@@ -26,6 +27,18 @@ def test_defaults_locales():
 
     assert loaded_settings.serving_target == "local"
     assert loaded_settings.zone_path(Zone.BRONZE).endswith("/bronze")
+
+
+def test_evidence_path_por_defecto_es_evidence_en_el_repo(settings):
+    assert load_settings().evidence_path == str(REPO_ROOT / "evidence")
+    # Los Settings armados a mano (como en los tests) también tienen el valor por defecto.
+    assert settings.evidence_path == str(REPO_ROOT / "evidence")
+
+
+def test_evidence_path_desde_el_entorno(monkeypatch):
+    monkeypatch.setenv("EVIDENCE_PATH", "/otra/evidencia")
+
+    assert load_settings().evidence_path == "/otra/evidencia"
 
 
 def test_zone_path_ignora_barra_final(monkeypatch):

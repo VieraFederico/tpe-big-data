@@ -15,7 +15,8 @@ from pyspark.sql.functions import (
 )
 
 from src.common.columns import SOURCE_FILE, with_technical_columns
-from src.common.lake import log_storage_stats, write_dataset
+from src.common.lake import log_storage_stats, quarantine_dataset, write_dataset
+from src.common.manifests import write_manifest
 from src.common.readers import read_csv_source
 from src.common.schemas import CORRUPT_RECORD_COL, SOURCES, Source
 from src.config import Settings, Zone
@@ -23,6 +24,8 @@ from src.quality.catalog import bronze_structural_rules
 from src.quality.rules import split_by_rules
 
 log = logging.getLogger(__name__)
+
+STEP_NAME = "bronze_batch"
 
 # Posición de la fila en el archivo de origen. Sirve para desempatar de forma idempotente
 # entre versiones de la misma clave dentro de un mismo archivo.
@@ -97,7 +100,12 @@ def ingest_source(
         )
 
         write_dataset(bronze, settings, Zone.BRONZE, source.name)
-        write_dataset(quarantine.drop(ROW_ORDER_COL), settings, Zone.QUARANTINE, source.name)
+        write_dataset(
+            quarantine.drop(ROW_ORDER_COL),
+            settings,
+            Zone.QUARANTINE,
+            quarantine_dataset(Zone.BRONZE, source.name),
+        )
         counts = _count_ingest(valid, quarantine, source)
     finally:
         raw.unpersist()
@@ -152,12 +160,24 @@ def _log_ingest(settings: Settings, source: Source, counts: BronzeBatchCounts) -
             source.natural_key,
         )
     log.info("bronze/%s: %s", source.name, counts)
-    log_storage_stats(settings, source.name, (Zone.BRONZE, Zone.QUARANTINE))
+    log_storage_stats(settings, source.name, (Zone.BRONZE,))
+    log_storage_stats(settings, quarantine_dataset(Zone.BRONZE, source.name), (Zone.QUARANTINE,))
 
 
 def run(spark: SparkSession, settings: Settings) -> dict[str, BronzeBatchCounts]:
-    """Paso ``bronze_batch``: ingesta todas las fuentes CSV y devuelve sus conteos por nombre."""
-    ingest_ts = lit(datetime.now(UTC)).cast("timestamp")
-    return {
+    """Paso ``bronze_batch``: ingesta todas las fuentes CSV y devuelve sus conteos por nombre.
+
+    Al terminar escribe el manifiesto ``_manifests/bronze_batch.json`` con la fecha de
+    ingesta y los conteos de cada fuente.
+    """
+    ingested_at = datetime.now(UTC)
+    ingest_ts = lit(ingested_at).cast("timestamp")
+    counts_by_source = {
         name: ingest_source(spark, settings, source, ingest_ts) for name, source in SOURCES.items()
     }
+    write_manifest(
+        settings,
+        STEP_NAME,
+        {"ingest_date": ingested_at.date().isoformat(), "datasets": counts_by_source},
+    )
+    return counts_by_source

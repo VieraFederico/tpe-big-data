@@ -20,6 +20,21 @@ def dataset_path(settings: Settings, zone: Zone, dataset: str) -> str:
     return f"{settings.zone_path(zone)}/{dataset}"
 
 
+def quarantine_dataset(layer: Zone, dataset: str) -> str:
+    """Nombre del dataset de cuarentena de una capa, p. ej. ``bronze/users``.
+
+    La cuarentena se separa por capa: ``quarantine/<capa>/<dataset>/``.
+
+    Args:
+        layer: Capa que manda las filas a cuarentena (``bronze`` o ``silver``).
+        dataset: Nombre del dataset dentro de esa capa.
+
+    Returns:
+        Nombre a usar como dataset dentro de la zona ``quarantine``.
+    """
+    return f"{layer}/{dataset}"
+
+
 def rebalance_by(df: DataFrame, columns: tuple[str, ...]) -> DataFrame:
     """Aplica el hint REBALANCE de Spark por las columnas dadas.
 

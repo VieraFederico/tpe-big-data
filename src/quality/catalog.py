@@ -1,10 +1,22 @@
 """Catálogo de reglas y marcas de calidad por capa."""
 
 from pyspark.sql import Column
-from pyspark.sql.functions import col, expr
+from pyspark.sql.functions import coalesce, col, expr, from_json, lit, when
+from pyspark.sql.types import ArrayType, StringType
 
 from src.common.columns import EVENT_TS
-from src.common.schemas import CORRUPT_RECORD_COL, USAGE_EVENTS, Source
+from src.common.schemas import (
+    BILLING_MONTHLY,
+    CORRUPT_RECORD_COL,
+    CUSTOMERS_ORGS,
+    MARKETING_TOUCHES,
+    NPS_SURVEYS,
+    RESOURCES,
+    SUPPORT_TICKETS,
+    USAGE_EVENTS,
+    USERS,
+    Source,
+)
 from src.quality.flags import Flag
 from src.quality.rules import Rule, any_null
 
@@ -20,6 +32,10 @@ METRIC_UNITS: dict[str, str] = {
 MIN_ACCEPTED_COST = -0.01
 
 GENAI_SERVICE = "genai"
+
+NPS_SCORE_RANGE = (-100.0, 100.0)
+CSAT_RANGE = (1.0, 5.0)
+USD_CURRENCY = "USD"
 
 
 def bronze_structural_rules(source: Source) -> list[Rule]:
@@ -46,7 +62,6 @@ def value_as_double() -> Column:
 
 
 def silver_event_rules() -> list[Rule]:
-
     value = col("value")
     unit = col("unit")
     metric = col("metric")
@@ -89,7 +104,6 @@ def silver_event_rules() -> list[Rule]:
 
 
 def silver_event_flags() -> list[Flag]:
-
     value = col("value")
     cost = col("cost_usd_increment")
     return [
@@ -105,3 +119,77 @@ def silver_event_flags() -> list[Flag]:
             (cost >= MIN_ACCEPTED_COST) & (cost < 0),
         ),
     ]
+
+
+def tags_from_json() -> Column:
+    return from_json(col("tags_json"), ArrayType(StringType()))
+
+
+def silver_master_flags() -> dict[str, list[Flag]]:
+    nps_out_of_range = Flag(
+        "NPS_OUT_OF_RANGE",
+        f"nps_score fuera de {_range_text(NPS_SCORE_RANGE)}; se reemplaza por null",
+        _outside(col("nps_score"), NPS_SCORE_RANGE),
+    )
+    exchange_rate = col("exchange_rate_to_usd")
+    return {
+        CUSTOMERS_ORGS.name: [nps_out_of_range],
+        USERS.name: [
+            Flag(
+                "LOGIN_BEFORE_CREATED",
+                "last_login anterior a created_at",
+                col("last_login") < col("created_at"),
+            ),
+        ],
+        RESOURCES.name: [
+            Flag(
+                "TAGS_INVALID_JSON",
+                "tags_json no es un array JSON válido; tags queda en null",
+                col("tags_json").isNotNull() & tags_from_json().isNull(),
+            ),
+        ],
+        BILLING_MONTHLY.name: [
+            Flag("CREDITS_IMPUTED", "credits nulo; se reemplaza por 0.0", col("credits").isNull()),
+            Flag("SUBTOTAL_NEGATIVE", "subtotal negativo", col("subtotal") < 0),
+            Flag(
+                "FX_USD_NOT_ONE",
+                f"currency {USD_CURRENCY} con exchange_rate_to_usd distinto de 1",
+                (col("currency") == USD_CURRENCY) & (exchange_rate != 1),
+            ),
+        ],
+        SUPPORT_TICKETS.name: [
+            Flag(
+                "CSAT_OUT_OF_RANGE",
+                f"csat fuera de {_range_text(CSAT_RANGE)}; se reemplaza por null",
+                _outside(col("csat"), CSAT_RANGE),
+            ),
+        ],
+        MARKETING_TOUCHES.name: [],
+        NPS_SURVEYS.name: [nps_out_of_range],
+    }
+
+
+def silver_master_fixes() -> dict[str, dict[str, Column]]:
+    nps_within_range = {"nps_score": _within_range_or_null(col("nps_score"), NPS_SCORE_RANGE)}
+    return {
+        CUSTOMERS_ORGS.name: nps_within_range,
+        USERS.name: {},
+        RESOURCES.name: {},
+        BILLING_MONTHLY.name: {"credits": coalesce(col("credits"), lit(0.0))},
+        SUPPORT_TICKETS.name: {"csat": _within_range_or_null(col("csat"), CSAT_RANGE)},
+        MARKETING_TOUCHES.name: {},
+        NPS_SURVEYS.name: nps_within_range,
+    }
+
+
+def _outside(column: Column, bounds: tuple[float, float]) -> Column:
+    return ~column.between(*bounds)
+
+
+def _within_range_or_null(column: Column, bounds: tuple[float, float]) -> Column:
+    return when(column.between(*bounds), column)
+
+
+def _range_text(bounds: tuple[float, float]) -> str:
+    low, high = bounds
+    return f"[{low:g}, {high:g}]"

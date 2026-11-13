@@ -107,7 +107,6 @@ def normalize_categoricals(df: DataFrame) -> DataFrame:
 
 
 def drop_duplicate_events(df: DataFrame) -> tuple[DataFrame, DataFrame]:
-
     window = Window.partitionBy(EVENT_ID).orderBy(
         col(INGEST_TS).asc_nulls_last(),
         col(SOURCE_FILE).asc_nulls_last(),
@@ -123,7 +122,6 @@ def drop_duplicate_events(df: DataFrame) -> tuple[DataFrame, DataFrame]:
 
 
 def _conform_valid_events(valid: DataFrame) -> DataFrame:
-
     flagged = with_dq_flags(
         valid.withColumn(VALUE_NUMERIC, value_as_double()), silver_event_flags()
     )

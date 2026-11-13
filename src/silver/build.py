@@ -1,4 +1,4 @@
-"""Paso silver: conforma Bronze, enriquece los eventos y reemplaza Silver y su cuarentena."""
+
 
 import logging
 from collections.abc import Iterator
@@ -14,6 +14,7 @@ from src.common.manifests import write_manifest
 from src.common.schemas import BILLING_MONTHLY, CUSTOMERS_ORGS, RESOURCES, SOURCES, USAGE_EVENTS
 from src.config import Settings, Zone
 from src.quality.flags import DQ_FLAGS_COL
+from src.quality.report import DatasetOutcome, write_quality_report
 from src.silver.anomalies import ANOMALY_SCORE, IS_COST_ANOMALY, with_cost_anomalies
 from src.silver.enrichment import ORGANIZATION_COLUMNS, RESOURCE_STATE, enrich_events
 from src.silver.events import CONFORMED_COLUMNS, conform_events
@@ -54,10 +55,16 @@ class SilverCounts(TypedDict):
 
 
 def run(spark: SparkSession, settings: Settings) -> dict[str, SilverCounts]:
-    """Paso ``silver``: reemplaza Silver y su cuarentena y escribe ``_manifests/silver.json``."""
+    """Paso ``silver``: reemplaza Silver y su cuarentena, escribe el reporte de calidad en
+    ``<evidencia>/quality/<run_id>/`` y, al final, ``_manifests/silver.json``."""
     master_counts = {name: _build_master(spark, settings, name) for name in SOURCES}
     orgs_scd2_counts = _build_orgs_scd2(spark, settings)
-    events_counts = _build_usage_events(spark, settings)
+    events_counts, dropped_events = _build_usage_events(spark, settings)
+    try:
+        outcomes = _quality_outcomes(spark, settings, events_counts, dropped_events)
+        write_quality_report(settings, settings.run_id, outcomes)
+    finally:
+        dropped_events.unpersist()
     counts: dict[str, SilverCounts] = {
         USAGE_EVENTS.name: events_counts,
         **master_counts,
@@ -88,12 +95,13 @@ def _build_orgs_scd2(spark: SparkSession, settings: Settings) -> SilverCounts:
     return counts
 
 
-def _build_usage_events(spark: SparkSession, settings: Settings) -> SilverCounts:
+def _build_usage_events(spark: SparkSession, settings: Settings) -> tuple[SilverCounts, DataFrame]:
     name = USAGE_EVENTS.name
     customers_orgs = read_dataset(spark, settings, Zone.SILVER, CUSTOMERS_ORGS.name)
     resources = read_dataset(spark, settings, Zone.SILVER, RESOURCES.name)
     with _cached(read_dataset(spark, settings, Zone.BRONZE, name)) as bronze_events:
         conformed = conform_events(bronze_events)
+        dropped_events = conformed.duplicates.cache()
         enriched = enrich_events(conformed.valid, customers_orgs, resources)
         with _cached(enriched) as enriched_events:
             silver = _with_run_id(with_cost_anomalies(enriched_events), settings)
@@ -106,11 +114,34 @@ def _build_usage_events(spark: SparkSession, settings: Settings) -> SilverCounts
                 quarantine_rows=_replace(
                     quarantine, settings, Zone.QUARANTINE, quarantine_dataset(Zone.SILVER, name)
                 ),
-                duplicates_dropped=conformed.duplicates.count(),
+                duplicates_dropped=dropped_events.count(),
             )
     _log_counts(settings, name, counts)
     log_storage_stats(settings, quarantine_dataset(Zone.SILVER, name), (Zone.QUARANTINE,))
-    return counts
+    return counts, dropped_events
+
+
+def _quality_outcomes(
+    spark: SparkSession, settings: Settings, events_counts: SilverCounts, dropped_events: DataFrame
+) -> dict[str, DatasetOutcome]:
+    events_name = USAGE_EVENTS.name
+    events_quarantine = (
+        read_dataset(
+            spark, settings, Zone.QUARANTINE, quarantine_dataset(Zone.SILVER, events_name)
+        )
+        if events_counts.get("quarantine_rows", 0) > 0
+        else None
+    )
+    events = DatasetOutcome(
+        silver=read_dataset(spark, settings, Zone.SILVER, events_name),
+        quarantine=events_quarantine,
+        dropped=dropped_events,
+    )
+    masters = {
+        name: DatasetOutcome(silver=read_dataset(spark, settings, Zone.SILVER, name))
+        for name in SOURCES
+    }
+    return {events_name: events, **masters}
 
 
 def _replace(df: DataFrame, settings: Settings, zone: Zone, dataset: str) -> int:

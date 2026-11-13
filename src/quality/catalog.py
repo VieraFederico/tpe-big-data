@@ -40,6 +40,8 @@ USD_CURRENCY = "USD"
 MATCHED_ORG_ID_COL = "_matched_org_id"
 MATCHED_RESOURCE_ID_COL = "_matched_resource_id"
 
+DUPLICATE_EVENT_RULE_ID = "SLV_DUPLICATE_EVENT_ID"
+
 
 def bronze_structural_rules(source: Source) -> list[Rule]:
     """Reglas base de Bronze: la fila parsea con el esquema y tiene clave natural."""
@@ -115,6 +117,7 @@ def silver_event_flags() -> list[Flag]:
             "UNIT_IMPUTED",
             "unit imputado a partir de metric",
             value.isNotNull() & col("unit").isNull() & col("metric").isin(list(METRIC_UNITS)),
+            fixes_value=True,
         ),
         Flag(
             "COST_NEGATIVE_SMALL",
@@ -148,6 +151,7 @@ def silver_master_flags() -> dict[str, list[Flag]]:
         "NPS_OUT_OF_RANGE",
         f"nps_score fuera de {_range_text(NPS_SCORE_RANGE)}; se reemplaza por null",
         _outside(col("nps_score"), NPS_SCORE_RANGE),
+        fixes_value=True,
     )
     exchange_rate = col("exchange_rate_to_usd")
     return {
@@ -167,7 +171,12 @@ def silver_master_flags() -> dict[str, list[Flag]]:
             ),
         ],
         BILLING_MONTHLY.name: [
-            Flag("CREDITS_IMPUTED", "credits nulo; se reemplaza por 0.0", col("credits").isNull()),
+            Flag(
+                "CREDITS_IMPUTED",
+                "credits nulo; se reemplaza por 0.0",
+                col("credits").isNull(),
+                fixes_value=True,
+            ),
             Flag("SUBTOTAL_NEGATIVE", "subtotal negativo", col("subtotal") < 0),
             Flag(
                 "FX_USD_NOT_ONE",
@@ -180,6 +189,7 @@ def silver_master_flags() -> dict[str, list[Flag]]:
                 "CSAT_OUT_OF_RANGE",
                 f"csat fuera de {_range_text(CSAT_RANGE)}; se reemplaza por null",
                 _outside(col("csat"), CSAT_RANGE),
+                fixes_value=True,
             ),
         ],
         MARKETING_TOUCHES.name: [],

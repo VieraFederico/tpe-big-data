@@ -29,11 +29,13 @@ class Flag:
         flag_id: Código que queda en ``dq_flags``, p. ej. ``VALUE_NULL``.
         reason: Descripción legible de lo que indica la marca.
         condition: Condición que es verdadera cuando la marca aplica a la fila.
+        fixes_value: True si, además de marcar, Silver corrige el valor de la fila.
     """
 
     flag_id: str
     reason: str
     condition: Column
+    fixes_value: bool = False
 
 
 def with_dq_flags(df: DataFrame, flags: list[Flag]) -> DataFrame:

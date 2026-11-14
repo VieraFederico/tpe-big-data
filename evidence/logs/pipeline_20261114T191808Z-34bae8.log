@@ -1,0 +1,9 @@
+2026-11-14 19:18:08,161 INFO pipeline - Log de la corrida: /app/evidence/logs/pipeline_20261114T191808Z-34bae8.log
+2026-11-14 19:18:08,161 INFO pipeline - Pipeline: run_id=20261114T191808Z-34bae8, pasos=['gold'], lake=/app/data/datalake, serving=local
+2026-11-14 19:18:09,232 INFO pipeline - == gold: inicio
+2026-11-14 19:18:14,661 INFO src.gold.build - Conciliación ok: 57 chequeos
+2026-11-14 19:18:16,033 INFO src.common.lake - gold/org_daily_usage_by_service (en disco) -> /app/data/datalake/gold/org_daily_usage_by_service | 60 particiones | 60 archivos | 0.6 MB (prom. 0.01 MB/archivo)
+2026-11-14 19:18:17,205 INFO src.common.lake - gold/top_services_by_org_14d (en disco) -> /app/data/datalake/gold/top_services_by_org_14d | 60 particiones | 60 archivos | 0.4 MB (prom. 0.01 MB/archivo)
+2026-11-14 19:18:18,077 INFO src.common.lake - gold/cost_anomaly_mart (en disco) -> /app/data/datalake/gold/cost_anomaly_mart | 25 particiones | 25 archivos | 0.1 MB (prom. 0.00 MB/archivo)
+2026-11-14 19:18:18,381 INFO src.gold.build - gold: {'org_daily_usage_by_service': 11050, 'top_services_by_org_14d': 15599, 'cost_anomaly_mart': 37}
+2026-11-14 19:18:18,381 INFO pipeline - == gold: ok en 9.1s

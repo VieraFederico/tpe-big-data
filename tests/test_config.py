@@ -83,7 +83,7 @@ def test_astra_sin_token(monkeypatch):
 
 def test_astra_sin_endpoint_ni_bundle(monkeypatch):
     monkeypatch.setenv("SERVING_TARGET", "astra")
-    monkeypatch.setenv("ASTRA_DB_APPLICATION_TOKEN", "AstraCS:x")
+    monkeypatch.setenv("ASTRA_DB_APPLICATION_TOKEN", "token-falso")
 
     with pytest.raises(ValueError, match="ASTRA_DB_API_ENDPOINT"):
         load_settings()
@@ -91,7 +91,7 @@ def test_astra_sin_endpoint_ni_bundle(monkeypatch):
 
 def test_astra_con_token_y_endpoint(monkeypatch):
     monkeypatch.setenv("SERVING_TARGET", "astra")
-    monkeypatch.setenv("ASTRA_DB_APPLICATION_TOKEN", "AstraCS:x")
+    monkeypatch.setenv("ASTRA_DB_APPLICATION_TOKEN", "token-falso")
     monkeypatch.setenv(
         "ASTRA_DB_API_ENDPOINT", f"https://{DB_ID}-us-east1.apps.astra.datastax.com"
     )

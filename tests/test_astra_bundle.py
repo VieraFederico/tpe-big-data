@@ -26,7 +26,7 @@ def astra_settings(settings, tmp_path):
     return replace(
         settings,
         serving_target="astra",
-        astra_token="AstraCS:token",
+        astra_token="token-falso",
         astra_api_endpoint=f"https://{DB_ID}-us-east1.apps.astra.datastax.com",
         astra_bundle_path=str(tmp_path / "secrets" / "bundle.zip"),
     )

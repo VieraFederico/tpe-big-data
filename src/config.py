@@ -12,6 +12,7 @@ from dotenv import load_dotenv
 
 REPO_ROOT = Path(__file__).resolve().parent.parent
 DEFAULT_EVIDENCE_PATH = str(REPO_ROOT / "evidence")
+DEFAULT_ANOMALY_P99_MULTIPLIER = 3.0
 
 ServingTarget = Literal["local", "astra"]
 VALID_TARGETS: frozenset[str] = frozenset(get_args(ServingTarget))
@@ -59,6 +60,8 @@ class Settings:
         astra_api_endpoint: Endpoint de la base en Astra; se usa para descargar el bundle.
         astra_bundle_path: Ruta al secure connect bundle, si ya está descargado.
         evidence_path: Carpeta donde los pasos dejan su evidencia (reportes, muestras).
+        anomaly_p99_multiplier: En Gold, un día es anomalía si su cost supera
+            ``anomaly_p99_multiplier × p99`` de su service.
         run_id: Id de la corrida; queda guardado en cada fila escrita.
     """
 
@@ -71,6 +74,7 @@ class Settings:
     astra_api_endpoint: str | None
     astra_bundle_path: str | None
     evidence_path: str = DEFAULT_EVIDENCE_PATH
+    anomaly_p99_multiplier: float = DEFAULT_ANOMALY_P99_MULTIPLIER
     run_id: str = field(default_factory=new_run_id)
 
     def zone_path(self, zone: Zone) -> str:
@@ -88,14 +92,18 @@ def load_settings(run_id: str | None = None) -> Settings:
         La configuración lista para usar.
 
     Raises:
-        ValueError: Si SERVING_TARGET es inválido o, con ``astra``, falta el token o
-            una forma de obtener el secure connect bundle.
+        ValueError: Si SERVING_TARGET es inválido, si ANOMALY_P99_MULTIPLIER no es un número
+            mayor a 0 o, con ``astra``, falta el token o una forma de obtener el secure
+            connect bundle.
     """
     target = os.getenv("SERVING_TARGET", "local").strip().lower()
     if target not in VALID_TARGETS:
         raise ValueError(
             f"SERVING_TARGET={target!r} inválido; usar uno de {sorted(VALID_TARGETS)}"
         )
+    multiplier = float(os.getenv("ANOMALY_P99_MULTIPLIER") or DEFAULT_ANOMALY_P99_MULTIPLIER)
+    if not multiplier > 0:
+        raise ValueError(f"ANOMALY_P99_MULTIPLIER={multiplier} inválido; tiene que ser > 0")
 
     settings = Settings(
         datalake_path=os.getenv("DATALAKE_PATH", "./data/datalake"),
@@ -107,6 +115,7 @@ def load_settings(run_id: str | None = None) -> Settings:
         astra_api_endpoint=os.getenv("ASTRA_DB_API_ENDPOINT") or None,
         astra_bundle_path=os.getenv("ASTRA_DB_SECURE_BUNDLE_PATH") or None,
         evidence_path=os.getenv("EVIDENCE_PATH") or DEFAULT_EVIDENCE_PATH,
+        anomaly_p99_multiplier=multiplier,
         run_id=run_id or new_run_id(),
     )
 

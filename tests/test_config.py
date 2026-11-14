@@ -18,6 +18,7 @@ def clean_env(monkeypatch):
         "ASTRA_DB_SECURE_BUNDLE_PATH",
         "DATALAKE_PATH",
         "EVIDENCE_PATH",
+        "ANOMALY_P99_MULTIPLIER",
     ):
         monkeypatch.delenv(variable_name, raising=False)
 
@@ -39,6 +40,25 @@ def test_evidence_path_desde_el_entorno(monkeypatch):
     monkeypatch.setenv("EVIDENCE_PATH", "/otra/evidencia")
 
     assert load_settings().evidence_path == "/otra/evidencia"
+
+
+def test_multiplicador_de_anomalias_por_defecto_es_3(settings):
+    assert load_settings().anomaly_p99_multiplier == 3.0
+    assert settings.anomaly_p99_multiplier == 3.0
+
+
+def test_multiplicador_de_anomalias_desde_el_entorno(monkeypatch):
+    monkeypatch.setenv("ANOMALY_P99_MULTIPLIER", "2.5")
+
+    assert load_settings().anomaly_p99_multiplier == 2.5
+
+
+@pytest.mark.parametrize("value", ["0", "-1", "nan", "tres"])
+def test_multiplicador_de_anomalias_invalido(monkeypatch, value):
+    monkeypatch.setenv("ANOMALY_P99_MULTIPLIER", value)
+
+    with pytest.raises(ValueError):
+        load_settings()
 
 
 def test_zone_path_ignora_barra_final(monkeypatch):

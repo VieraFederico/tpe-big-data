@@ -11,7 +11,15 @@ from src.common.lake import log_storage_stats, read_dataset, write_dataset
 from src.common.manifests import read_manifest, write_manifest
 from src.common.schemas import USAGE_EVENTS
 from src.config import Settings, Zone
-from src.gold.marts import ORG_DAILY_USAGE_BY_SERVICE, USAGE_DATE, org_daily_usage_by_service
+from src.gold.anomalies import COST_ANOMALY_MART, cost_anomaly_mart, write_anomaly_summary_csv
+from src.gold.marts import (
+    AS_OF_DATE,
+    ORG_DAILY_USAGE_BY_SERVICE,
+    TOP_SERVICES_BY_ORG_14D,
+    USAGE_DATE,
+    org_daily_usage_by_service,
+    top_services_by_org_14d,
+)
 from src.gold.reconciliation import ReconciliationError, check, write_reconciliation_csv
 from src.silver import build as silver
 
@@ -23,7 +31,8 @@ STEP_NAME = "gold"
 def run(spark: SparkSession, settings: Settings) -> dict[str, int]:
     """Step ``gold``: si la reconciliation cierra, pisa los marts y devuelve sus rows.
 
-    Siempre deja ``reconciliation.csv`` en evidence y el ``_manifests/gold.json``.
+    Siempre deja ``reconciliation.csv`` en evidence y el ``_manifests/gold.json``; si el gate
+    pasa, también ``anomaly_summary.csv``.
 
     Raises:
         ReconciliationError: Si algún check no cierra; ahí no se toca ``gold/``.
@@ -50,12 +59,18 @@ def run(spark: SparkSession, settings: Settings) -> dict[str, int]:
     log.info("Conciliación ok: %d chequeos", len(results))
 
     silver_events = read_dataset(spark, settings, Zone.SILVER, USAGE_EVENTS.name)
-    daily = org_daily_usage_by_service(silver_events).withColumn(RUN_ID, lit(settings.run_id))
-    marts = {
-        ORG_DAILY_USAGE_BY_SERVICE: _replace(
-            daily, settings, ORG_DAILY_USAGE_BY_SERVICE, (USAGE_DATE,)
-        ),
+    daily = org_daily_usage_by_service(silver_events)
+    anomalies, summary = cost_anomaly_mart(daily, settings.anomaly_p99_multiplier)
+    to_write = {
+        ORG_DAILY_USAGE_BY_SERVICE: (daily, USAGE_DATE),
+        TOP_SERVICES_BY_ORG_14D: (top_services_by_org_14d(daily), AS_OF_DATE),
+        COST_ANOMALY_MART: (anomalies, USAGE_DATE),
     }
+    marts = {
+        name: _replace(df.withColumn(RUN_ID, lit(settings.run_id)), settings, name, (partition,))
+        for name, (df, partition) in to_write.items()
+    }
+    write_anomaly_summary_csv(settings, settings.run_id, summary)
     inputs = {
         f"{step}_run_id": (read_manifest(settings, step) or {}).get("run_id")
         for step in (bronze_batch.STEP_NAME, silver.STEP_NAME)

@@ -13,15 +13,20 @@ from typing import Any
 from pyspark.sql import DataFrame, Row, SparkSession
 
 from src.common.lake import read_dataset
+from src.common.manifests import read_manifest
 from src.config import Settings, Zone, load_settings
+from src.gold.build import STEP_NAME as GOLD_STEP
 from src.serving.cassandra_client import execute_cql_file, session_scope
-from src.serving.errors import WriteFailedError
+from src.serving.errors import GoldNotPublishableError, WriteFailedError
 
 log = logging.getLogger(__name__)
 
 IDENTIFIER_RE = re.compile(r"^[a-z_][a-z0-9_]*$")
 DEFAULT_WRITE_CONCURRENCY = 32
 SCHEMA_DIR = Path(__file__).parent / "cql" / "schema"
+# Solo se publica un Gold cuyo manifiesto dice "ok"; sin manifiesto el estado es "missing".
+GOLD_STATUS_OK = "ok"
+GOLD_MANIFEST_MISSING = "missing"
 
 
 @dataclass(frozen=True)
@@ -146,7 +151,12 @@ def run(
     ``<mart>.cql`` define la tabla ``<mart>``, que se carga desde ``gold/<mart>``.
     Cassandra trata cada INSERT como upsert por clave primaria, así que volver a
     correr el paso no duplica filas.
+
+    Raises:
+        GoldNotPublishableError: Si ``_manifests/gold.json`` no existe o su ``status`` no
+            es ``ok``; en ese caso no se abre la sesión ni se toca ninguna tabla.
     """
+    check_gold_publishable(settings)
     ddl_by_mart = {cql_path.stem: cql_path for cql_path in sorted(schema_dir.glob("*.cql"))}
     with session_scope(settings) as session:
         for cql_path in ddl_by_mart.values():
@@ -156,6 +166,19 @@ def run(
         mart: write_dataframe(read_dataset(spark, settings, Zone.GOLD, mart), mart, settings)
         for mart in ddl_by_mart
     }
+
+
+def check_gold_publishable(settings: Settings) -> None:
+    """Verifica que el último paso ``gold`` haya terminado en ``ok``.
+
+    Raises:
+        GoldNotPublishableError: Si ``_manifests/gold.json`` no existe o su ``status`` no
+            es ``ok`` (p. ej. ``gate_failed`` cuando la conciliación no cerró).
+    """
+    manifest = read_manifest(settings, GOLD_STEP)
+    status = GOLD_MANIFEST_MISSING if manifest is None else manifest.get("status")
+    if status != GOLD_STATUS_OK:
+        raise GoldNotPublishableError(str(status))
 
 
 def _add_counts(left: tuple[int, int], right: tuple[int, int]) -> tuple[int, int]:

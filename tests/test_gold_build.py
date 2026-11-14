@@ -92,6 +92,20 @@ def test_lake_consistente_escribe_los_tres_marts_y_el_manifiesto(spark, lake):
     }
 
 
+def test_cada_mart_escrito_tiene_las_columnas_y_tipos_de_su_esquema(spark, lake):
+    """Lo que el serving lee de Gold coincide con MART_SCHEMAS (la partición incluida)."""
+    _consistent_lake(spark, lake)
+
+    build.run(spark, lake)
+
+    assert set(build.MART_SCHEMAS) == set(MARTS)
+    for mart, schema in build.MART_SCHEMAS.items():
+        written = spark.read.parquet(dataset_path(lake, Zone.GOLD, mart))
+        expected = {field.name: field.dataType.simpleString() for field in schema}
+        assert dict(written.dtypes) == expected
+        assert len(written.columns) == len(schema.fields)
+
+
 def test_anomaly_summary_coincide_con_el_mart_de_anomalias(spark, lake):
     _consistent_lake(spark, lake)
     build.run(spark, lake)

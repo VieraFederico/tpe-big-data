@@ -4,12 +4,13 @@ import logging
 
 from pyspark.sql import DataFrame, SparkSession
 from pyspark.sql.functions import lit
+from pyspark.sql.types import DataType, StructField, StructType
 
 from src.bronze.batch import ingest as bronze_batch
 from src.common.columns import RUN_ID
 from src.common.lake import log_storage_stats, read_dataset, write_dataset
 from src.common.manifests import read_manifest, write_manifest
-from src.common.schemas import USAGE_EVENTS
+from src.common.schemas import DATE, DOUBLE, INTEGER, LONG, STRING, USAGE_EVENTS
 from src.config import Settings, Zone
 from src.gold.anomalies import COST_ANOMALY_MART, cost_anomaly_mart, write_anomaly_summary_csv
 from src.gold.marts import (
@@ -26,6 +27,51 @@ from src.silver import build as silver
 log = logging.getLogger(__name__)
 
 STEP_NAME = "gold"
+
+
+def _mart_schema(*field_specs: tuple[str, DataType]) -> StructType:
+    """Esquema de un mart tal como queda en Gold: sus columnas más ``run_id``."""
+    fields = [*field_specs, (RUN_ID, STRING)]
+    return StructType([StructField(name, data_type) for name, data_type in fields])
+
+
+# Columnas y tipos de cada mart en Gold; las tablas de Cassandra tienen exactamente estas
+# columnas, porque el serving inserta las columnas del mart tal cual.
+MART_SCHEMAS: dict[str, StructType] = {
+    ORG_DAILY_USAGE_BY_SERVICE: _mart_schema(
+        ("org_id", STRING),
+        ("service", STRING),
+        (USAGE_DATE, DATE),
+        ("daily_cost_usd", DOUBLE),
+        ("requests", DOUBLE),
+        ("cpu_hours", DOUBLE),
+        ("storage_gb_hours", DOUBLE),
+        ("carbon_kg", DOUBLE),
+        ("genai_tokens", LONG),
+        ("event_count", INTEGER),
+        ("cost_anomaly_events", INTEGER),
+    ),
+    TOP_SERVICES_BY_ORG_14D: _mart_schema(
+        ("org_id", STRING),
+        ("service", STRING),
+        (AS_OF_DATE, DATE),
+        ("window_start_date", DATE),
+        ("rank", INTEGER),
+        ("cost_14d_usd", DOUBLE),
+        ("requests_14d", DOUBLE),
+    ),
+    COST_ANOMALY_MART: _mart_schema(
+        ("org_id", STRING),
+        ("service", STRING),
+        (USAGE_DATE, DATE),
+        ("daily_cost_usd", DOUBLE),
+        ("p99_usd", DOUBLE),
+        ("threshold_usd", DOUBLE),
+        ("anomaly_score", DOUBLE),
+        ("robust_z", DOUBLE),
+        ("detection_method", STRING),
+    ),
+}
 
 
 def run(spark: SparkSession, settings: Settings) -> dict[str, int]:

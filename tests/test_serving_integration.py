@@ -10,6 +10,7 @@ from datetime import date
 import pytest
 
 from src.common.lake import write_dataset
+from src.common.manifests import write_manifest
 from src.config import Settings, Zone
 from src.serving import cassandra_writer
 from src.serving.cassandra_client import get_session
@@ -126,6 +127,7 @@ def test_run_crea_la_tabla_y_carga_gold_sin_duplicar(spark, cassandra_settings, 
         "org_id string, usage_date date, cost double",
     )
     write_dataset(gold_mart, lake_settings, Zone.GOLD, TEST_MART, partition_by=("usage_date",))
+    write_manifest(lake_settings, "gold", {"status": "ok", "marts": {TEST_MART: 2}})
 
     first_load = cassandra_writer.run(spark, lake_settings, schema_dir)
     second_load = cassandra_writer.run(spark, lake_settings, schema_dir)

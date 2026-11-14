@@ -43,3 +43,18 @@ class WriteFailedError(ServingError):
         )
         self.table = table
         self.rows_failed = rows_failed
+
+
+class GoldNotPublishableError(ServingError):
+    """Gold no se publica porque su manifiesto falta o no terminó en ``ok``.
+
+    Attributes:
+        status: Estado leído de ``_manifests/gold.json``, o ``missing`` si no existe.
+    """
+
+    def __init__(self, status: str) -> None:
+        super().__init__(
+            f"No se publica Gold: el estado de _manifests/gold.json es {status!r} "
+            "(tiene que ser 'ok'); correr el paso gold y revisar la conciliación"
+        )
+        self.status = status

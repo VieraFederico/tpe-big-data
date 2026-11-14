@@ -5,7 +5,7 @@ from collections.abc import Callable
 from typing import TypedDict
 
 from pyspark.errors import AnalysisException
-from pyspark.sql import DataFrame, SparkSession
+from pyspark.sql import Column, DataFrame, SparkSession
 from pyspark.sql.functions import coalesce, col, sha2, struct, to_date, to_json, try_to_timestamp
 
 from src.common.columns import EVENT_DATE, EVENT_TS, with_technical_columns
@@ -43,22 +43,24 @@ class BronzeStreamStats(TypedDict):
     quarantine_total: int
 
 
+def event_dedupe_key() -> Column:
+    """Key para el dedupe de un event: su ``event_id`` o, si es null, un hash del record."""
+    source_cols = [field.name for field in USAGE_EVENTS.read_schema().fields]
+    return coalesce(col("event_id"), sha2(to_json(struct(*source_cols)), 256))
+
+
 def build_stream(spark: SparkSession, settings: Settings) -> DataFrame:
     """Arma el stream de eventos con timestamp parseado y deduplicado dentro del watermark.
 
     Los eventos sin ``event_id`` se deduplican por un hash de todo su contenido.
     """
-    source_cols = [field.name for field in USAGE_EVENTS.read_schema().fields]
     return (
         with_technical_columns(
             read_usage_events_stream(spark, settings, MAX_FILES_PER_TRIGGER), settings.run_id
         )
         .withColumn(EVENT_TS, try_to_timestamp(col("timestamp")))
         .withColumn(EVENT_DATE, to_date(EVENT_TS))
-        .withColumn(
-            "_dedupe_key",
-            coalesce(col("event_id"), sha2(to_json(struct(*source_cols)), 256)),
-        )
+        .withColumn("_dedupe_key", event_dedupe_key())
         .withWatermark(EVENT_TS, WATERMARK)
         .dropDuplicatesWithinWatermark(["_dedupe_key"])
         .drop("_dedupe_key")

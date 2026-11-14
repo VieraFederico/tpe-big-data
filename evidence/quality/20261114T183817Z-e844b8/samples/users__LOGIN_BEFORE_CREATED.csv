@@ -1,0 +1,21 @@
+user_id,org_id,email,role,active,created_at,last_login,dq_flags,ingest_ts,source_file,run_id
+user_01nouhtc,org_1swjckjl,user_01nouhtc@example.com,developer,true,2025-07-12,2025-06-05,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_04x0qzfh,org_tvhhpbmy,user_04x0qzfh@example.com,devops,true,2025-07-14,2025-06-12,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_050ui22k,org_uzfk8ut0,user_050ui22k@example.com,data_engineer,true,2025-07-13,2025-06-29,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_06nkwfg3,org_xll4zklo,user_06nkwfg3@example.com,data_engineer,true,2025-07-31,2025-05-27,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_085rntdr,org_pht0hl9x,user_085rntdr@example.com,ml_engineer,true,2025-07-31,2025-07-08,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_08uhbxlb,org_afeyuhz1,user_08uhbxlb@example.com,ml_engineer,true,2025-07-17,2025-07-12,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_09lzrk79,org_xll4zklo,user_09lzrk79@example.com,analyst,true,2025-07-13,2025-05-25,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_0bq1s9ry,org_0lzjjege,user_0bq1s9ry@example.com,devops,true,2025-08-01,2025-06-20,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_0dl5e11e,org_53lc58dr,user_0dl5e11e@example.com,admin,true,2025-08-02,2025-06-09,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_0odwmqx5,org_ohp6vz41,user_0odwmqx5@example.com,developer,true,2025-06-06,2025-05-22,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_0pdw5py6,org_fel6246h,user_0pdw5py6@example.com,data_engineer,true,2025-07-22,2025-06-18,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_0w10lbt3,org_dzr1yxr2,user_0w10lbt3@example.com,devops,true,2025-08-03,2025-07-19,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_15ahdbvz,org_vyie6ivw,user_15ahdbvz@example.com,developer,true,2025-06-22,2025-05-15,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_15z8vmuh,org_he7ur23g,user_15z8vmuh@example.com,devops,true,2025-08-08,2025-05-17,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_199dxj37,org_x7eedtjv,user_199dxj37@example.com,devops,true,2025-07-28,2025-07-01,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_1b0z3nx3,org_dbdw2pcn,user_1b0z3nx3@example.com,devops,true,2025-08-06,2025-05-18,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_1bj9rm7p,org_dhylurtp,user_1bj9rm7p@example.com,devops,true,2025-07-28,2025-05-19,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_1cjfx5li,org_pja1wj0t,user_1cjfx5li@example.com,analyst,true,2025-06-16,2025-06-13,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_1g463sdy,org_ir4cowgz,user_1g463sdy@example.com,analyst,true,2025-06-21,2025-05-26,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8
+user_1g983ep9,org_a7tz0ync,user_1g983ep9@example.com,devops,true,2025-07-20,2025-05-14,"[""LOGIN_BEFORE_CREATED""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/users.csv,20261114T183817Z-e844b8

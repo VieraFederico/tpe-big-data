@@ -1,0 +1,21 @@
+ticket_id,org_id,category,severity,created_at,resolved_at,csat,sla_breached,dq_flags,ingest_ts,source_file,run_id
+tkt_07vscqmp,org_wm31yiha,availability,high,2025-07-11,2025-07-28,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_0gwhaoqh,org_xaji0y6d,integration,medium,2025-07-27,,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_1m4wu3ga,org_teiyzcot,performance,low,2025-05-27,2025-05-31,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_1qsa11pt,org_a7tz0ync,usability,low,2025-06-27,2025-06-29,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_2e4f4n3z,org_pht0hl9x,performance,high,2025-06-25,2025-06-27,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_2ij4tt43,org_hv3a3zmf,billing,medium,2025-07-22,,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_3abeg1cj,org_nam148p0,billing,high,2025-06-04,2025-06-04,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_4ciwl3rf,org_g8sbi4q2,billing,medium,2025-07-21,2025-07-21,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_5y2da5b4,org_sg65kxvf,availability,medium,2025-07-04,,,true,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_6ke1q5ms,org_rixa11dp,billing,low,2025-06-30,2025-07-02,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_aqs3tgdb,org_xll4zklo,billing,medium,2025-08-13,2025-08-21,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_brx8u73n,org_vyie6ivw,performance,high,2025-07-18,2025-07-20,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_bz9zqhbq,org_afeyuhz1,performance,medium,2025-07-27,2025-08-01,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_epl2u5cf,org_g8sbi4q2,integration,medium,2025-08-19,2025-08-25,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_fh065afu,org_sg65kxvf,usability,medium,2025-06-19,2025-06-28,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_fwi45a45,org_cwi64ciy,billing,critical,2025-07-27,2025-07-29,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_h23gxrir,org_phr62gds,availability,medium,2025-07-06,,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_ibhif5sl,org_kdgigatj,integration,medium,2025-05-11,2025-05-13,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_it7xxdsb,org_c11ertj5,availability,low,2025-07-11,2025-07-11,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8
+tkt_l2l5b56b,org_dbdw2pcn,integration,medium,2025-07-10,2025-07-13,,false,"[""CSAT_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/support_tickets.csv,20261114T183817Z-e844b8

@@ -1,0 +1,14 @@
+{
+  "run_id": "20261114T183817Z-e844b8",
+  "written_at": "2026-11-14T18:38:42Z",
+  "status": "ok",
+  "inputs": {
+    "bronze_batch_run_id": "20261114T183817Z-e844b8",
+    "silver_run_id": "20261114T183817Z-e844b8"
+  },
+  "marts": {
+    "org_daily_usage_by_service": 11050,
+    "top_services_by_org_14d": 15599,
+    "cost_anomaly_mart": 37
+  }
+}

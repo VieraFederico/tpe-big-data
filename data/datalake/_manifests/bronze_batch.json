@@ -1,0 +1,63 @@
+{
+  "run_id": "20261114T183817Z-e844b8",
+  "written_at": "2026-11-14T18:38:24Z",
+  "ingest_date": "2026-11-14",
+  "datasets": {
+    "customers_orgs": {
+      "read": 80,
+      "quarantine": 0,
+      "written": 80,
+      "exact_duplicates": 0,
+      "key_conflicts": 0,
+      "duplicates": 0
+    },
+    "users": {
+      "read": 800,
+      "quarantine": 0,
+      "written": 800,
+      "exact_duplicates": 0,
+      "key_conflicts": 0,
+      "duplicates": 0
+    },
+    "resources": {
+      "read": 400,
+      "quarantine": 0,
+      "written": 400,
+      "exact_duplicates": 0,
+      "key_conflicts": 0,
+      "duplicates": 0
+    },
+    "billing_monthly": {
+      "read": 240,
+      "quarantine": 0,
+      "written": 240,
+      "exact_duplicates": 0,
+      "key_conflicts": 0,
+      "duplicates": 0
+    },
+    "support_tickets": {
+      "read": 1000,
+      "quarantine": 0,
+      "written": 1000,
+      "exact_duplicates": 0,
+      "key_conflicts": 0,
+      "duplicates": 0
+    },
+    "marketing_touches": {
+      "read": 1500,
+      "quarantine": 0,
+      "written": 1500,
+      "exact_duplicates": 0,
+      "key_conflicts": 0,
+      "duplicates": 0
+    },
+    "nps_surveys": {
+      "read": 92,
+      "quarantine": 0,
+      "written": 92,
+      "exact_duplicates": 0,
+      "key_conflicts": 0,
+      "duplicates": 0
+    }
+  }
+}

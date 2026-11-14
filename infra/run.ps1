@@ -21,6 +21,7 @@ Uso: .\infra\run.ps1 <comando> [args]
   query <archivo.cql> ...  Ejecuta una consulta y guarda evidencia (-p clave=valor)
   test [args]              Corre los tests (pytest)
   lint                     Chequea estilo y tipos (ruff check, ruff format --check, mypy)
+  mapreduce-check          Compara el mart diario de Gold con MapReduce vs. DataFrames
   shell                    Abre una terminal dentro del contenedor
   clean                    Borra las salidas del lake (bronze, silver, gold, quarantine, checkpoints)
   down                     Baja los contenedores (Cassandra local incluida)
@@ -78,6 +79,7 @@ switch ($Command) {
     }
     "test" { Invoke-Pipeline python -m pytest tests @Rest }
     "lint" { Invoke-Pipeline sh -c "ruff check . && ruff format --check . && mypy" }
+    "mapreduce-check" { Invoke-Pipeline python -m src.gold.mapreduce }
     "shell" { Invoke-Pipeline bash }
     "clean" {
         foreach ($dir in $OutputDirs) {

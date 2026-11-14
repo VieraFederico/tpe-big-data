@@ -1,0 +1,2 @@
+org_id,org_name,industry,hq_region,plan_tier,is_enterprise,signup_date,sales_rep,lifecycle_stage,marketing_source,nps_score,dq_flags,ingest_ts,source_file,run_id
+org_pac56t4u,Gamma Cloud 37,Healthcare,eu-central,enterprise,false,2025-05-21,rep_a,active,partner,,"[""NPS_OUT_OF_RANGE""]",2026-11-14 18:38:18.775575,file:///app/data/datalake/landing/customers_orgs.csv,20261114T183817Z-e844b8

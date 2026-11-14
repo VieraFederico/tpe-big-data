@@ -1,0 +1,3 @@
+2026-11-14 22:43:50,077 INFO src.serving.cassandra_client - Sesión CQL abierta (target=astra, keyspace=cloud_analytics)
+2026-11-14 22:43:50,272 INFO queries - Consulta q2_top_services_14d: 5 filas en 0.191s
+2026-11-14 22:43:50,865 INFO queries - Evidencia guardada en evidence/entrega-2/queries/q2_top_services_14d.txt y evidence/entrega-2/queries/q2_top_services_14d.csv

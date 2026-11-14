@@ -1,6 +1,6 @@
 # Diccionario de datos
 
-Datasets del lake (`data/datalake/`). Por ahora tiene la capa Gold y su manifest. Las fechas están en UTC y, al leer un dataset con Spark, la columna de partition queda al final del schema.
+Datasets del lake (`data/datalake/`) y tablas del serving. Por ahora tiene la capa Gold, su manifest y las tablas de Cassandra/AstraDB que se cargan desde Gold. Las fechas están en UTC y, al leer un dataset con Spark, la columna de partition queda al final del schema.
 
 ## Gold
 
@@ -102,3 +102,66 @@ Ejemplo de la corrida completa:
   }
 }
 ```
+
+## Cassandra/AstraDB
+
+Tablas del keyspace `cloud_analytics`, una por mart de Gold, con el mismo nombre y las mismas columnas (incluido `run_id`). Las crea y las carga el step `serving` ([`src/serving/cassandra_writer.py`](../src/serving/cassandra_writer.py)) desde `gold/<mart>`, solo si `_manifests/gold.json` dice `ok`. Los DDL están en [`src/serving/cql/schema/`](../src/serving/cql/schema/) y las consultas en [`src/serving/cql/queries/`](../src/serving/cql/queries/).
+
+Cada columna significa lo mismo que en su mart (ver arriba); acá van el tipo en CQL y el rol en la primary key. Los tipos se mapean así: `string → text`, `date → date`, `double → double`, `bigint → bigint`, `int → int`. Por qué esas keys y cómo se carga: [serving.md](serving.md) y [`DECISIONS.md`](../DECISIONS.md), D-06 a D-09. Las rows de cada tabla son las del mart (`marts` en `_manifests/gold.json`).
+
+### `org_daily_usage_by_service`
+
+- Primary key: `((org_id), usage_date, service)`.
+- Clustering order: `usage_date DESC, service ASC`.
+- Responde la consulta 1, uso y cost diario por service de una org en un rango de fechas: [`q1_daily_usage_by_range.cql`](../src/serving/cql/queries/q1_daily_usage_by_range.cql) (`org_id`, `from_date`, `to_date`). Conteo por org: [`count_org_daily_usage_by_service.cql`](../src/serving/cql/queries/count_org_daily_usage_by_service.cql) (`org_id`).
+
+| Columna | Tipo | En la primary key |
+| :--- | :--- | :--- |
+| `org_id` | text | Partition key. |
+| `usage_date` | date | Clustering, descendente. |
+| `service` | text | Clustering, ascendente. |
+| `daily_cost_usd` | double | |
+| `requests` | double | |
+| `cpu_hours` | double | |
+| `storage_gb_hours` | double | |
+| `carbon_kg` | double | |
+| `genai_tokens` | bigint | |
+| `event_count` | int | |
+| `cost_anomaly_events` | int | |
+| `run_id` | text | |
+
+### `top_services_by_org_14d`
+
+- Primary key: `((org_id, as_of_date), rank)`.
+- Clustering order: `rank ASC`.
+- Responde la consulta 2, top-N de services por cost de los últimos 14 días de una org a una fecha de corte: [`q2_top_services_14d.cql`](../src/serving/cql/queries/q2_top_services_14d.cql) (`org_id`, `as_of_date`, `n` entero). Conteo por org y fecha: [`count_top_services_by_org_14d.cql`](../src/serving/cql/queries/count_top_services_by_org_14d.cql) (`org_id`, `as_of_date`).
+
+| Columna | Tipo | En la primary key |
+| :--- | :--- | :--- |
+| `org_id` | text | Partition key. |
+| `as_of_date` | date | Partition key. |
+| `rank` | int | Clustering, ascendente. |
+| `service` | text | |
+| `window_start_date` | date | |
+| `cost_14d_usd` | double | |
+| `requests_14d` | double | |
+| `run_id` | text | |
+
+### `cost_anomaly_mart`
+
+- Primary key: `((org_id), usage_date, service)`.
+- Clustering order: `usage_date DESC, service ASC`.
+- Responde las anomalías de una org en un rango de fechas: [`q_cost_anomalies_by_org.cql`](../src/serving/cql/queries/q_cost_anomalies_by_org.cql) (`org_id`, `from_date`, `to_date`). Conteo por org: [`count_cost_anomaly_mart.cql`](../src/serving/cql/queries/count_cost_anomaly_mart.cql) (`org_id`).
+
+| Columna | Tipo | En la primary key |
+| :--- | :--- | :--- |
+| `org_id` | text | Partition key. |
+| `usage_date` | date | Clustering, descendente. |
+| `service` | text | Clustering, ascendente. |
+| `daily_cost_usd` | double | |
+| `p99_usd` | double | |
+| `threshold_usd` | double | |
+| `anomaly_score` | double | |
+| `robust_z` | double | |
+| `detection_method` | text | |
+| `run_id` | text | |

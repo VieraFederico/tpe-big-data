@@ -68,3 +68,39 @@ Registro de las decisiones de diseño del proyecto y de dónde nos apartamos del
 - **Alternativas descartadas**: Escribir Gold con la versión de RDDs (cada row pasa por Python y Spark no puede optimizar). No tener la versión MapReduce (la lógica del informe quedaría sin mostrar).
 - **Consecuencias**: Hay dos implementaciones de la misma regla; si cambia el mart diario hay que cambiar las dos, y el test lo detecta si no. En la corrida completa dieron las mismas 11050 keys y diferencia 0 en todas las métricas. Detalle en [docs/mapreduce.md](docs/mapreduce.md).
 - **Estado**: Aceptada.
+
+## D-06: Primary key de `org_daily_usage_by_service` en Cassandra
+
+- **Fecha**: 2026-11-14
+- **Contexto**: La consulta 1 del informe pide el uso y cost diario por service de una org en un rango de fechas, con los días más recientes primero. En Cassandra una consulta sin `ALLOW FILTERING` tiene que fijar la partition key completa y solo puede filtrar por rango y ordenar por las clustering columns.
+- **Decisión**: `PRIMARY KEY ((org_id), usage_date, service)` con `CLUSTERING ORDER BY (usage_date DESC, service ASC)`, como en la tabla de claves del informe. La consulta ([`q1_daily_usage_by_range.cql`](src/serving/cql/queries/q1_daily_usage_by_range.cql)) fija `org_id`, filtra `usage_date` entre `from_date` y `to_date` y lee una sola partition, ya ordenada.
+- **Alternativas descartadas**: Partition por `(org_id, usage_date)` (un rango de fechas tendría que leer una partition por día). Partition por `usage_date` (consultar una org necesitaría `ALLOW FILTERING`, y la partition de cada día tendría las 80 orgs). Partir la partition por mes (con dos meses de datos no hace falta).
+- **Consecuencias**: Son 80 partitions, de como mucho 60 días × 6 services = 360 rows con el dataset del repo. La partition de una org crece con los días; con años de datos habría que partirla por mes. La tabla no sirve para consultar un día de todas las orgs.
+- **Estado**: Aceptada.
+
+## D-07: Primary key de `top_services_by_org_14d` en Cassandra
+
+- **Fecha**: 2026-11-14
+- **Contexto**: La consulta 2 del informe pide el top-N de services por cost de los últimos 14 días de una org, siempre a una fecha de corte dada. El mart tiene una row por org, fecha de corte y service, con un `rank` sin empates ni huecos (D-02).
+- **Decisión**: `PRIMARY KEY ((org_id, as_of_date), rank)` con `CLUSTERING ORDER BY (rank ASC)`. La consulta ([`q2_top_services_14d.cql`](src/serving/cql/queries/q2_top_services_14d.cql)) fija la org y la fecha y hace `ORDER BY rank ASC LIMIT n`: lee una partition de como mucho 6 rows y el `LIMIT` ya es el top-N.
+- **Alternativas descartadas**: Partition solo por `org_id` con `as_of_date` como clustering (también respondería, pero la consulta siempre fija la fecha y así cada partition es chica, como en la tabla de claves del informe). `service` como clustering (el top habría que ordenarlo en el cliente y `LIMIT n` no serviría).
+- **Consecuencias**: `service` no está en la key: si `rank` se repitiera en una misma org y fecha, una row pisaría a otra. No pasa porque `rank` sale de `row_number()`. Para ver el top de varias fechas hay que hacer una consulta por fecha.
+- **Estado**: Aceptada.
+
+## D-08: Primary key de `cost_anomaly_mart` en Cassandra
+
+- **Fecha**: 2026-11-14
+- **Contexto**: Las anomalías se consultan por org en un rango de fechas, igual que la consulta 1. El mart tiene una row por org, día y service, y la fecha se llama `usage_date` (D-03).
+- **Decisión**: La misma key que el mart diario: `PRIMARY KEY ((org_id), usage_date, service)` con `CLUSTERING ORDER BY (usage_date DESC, service ASC)`. La consulta es [`q_cost_anomalies_by_org.cql`](src/serving/cql/queries/q_cost_anomalies_by_org.cql).
+- **Alternativas descartadas**: Partition por `usage_date` o por `service` (ver las anomalías de un día o de un service para todas las orgs no es una consulta del informe, y la consulta por org necesitaría `ALLOW FILTERING`).
+- **Consecuencias**: Las partitions son muy chicas (37 rows en total en la corrida completa). Una org sin anomalías no tiene partition y la consulta devuelve 0 rows.
+- **Estado**: Aceptada.
+
+## D-09: Carga completa por upsert con gate de publicación
+
+- **Fecha**: 2026-11-14
+- **Contexto**: Gold se recalcula completo en cada corrida y el step `serving` lo publica en Cassandra o AstraDB. Volver a correr `serving` no puede duplicar rows, y no se tiene que publicar un Gold cuya reconciliation falló (D-01).
+- **Decisión**: El step `serving` ([`src/serving/cassandra_writer.py`](src/serving/cassandra_writer.py)) primero lee `_manifests/gold.json`: si no existe o su `status` no es `ok`, termina con `GoldNotPublishableError` antes de abrir la conexión, sin crear ni escribir tablas. Si está `ok`, corre los `CREATE TABLE IF NOT EXISTS` de `src/serving/cql/schema/` y carga cada mart entero en su tabla con un `INSERT` preparado, en paralelo desde los workers de Spark. Cassandra trata cada `INSERT` como upsert por primary key. Los null se mandan como `UNSET` para no generar tombstones. Si alguna row falla, el step falla (`WriteFailedError`).
+- **Alternativas descartadas**: Vaciar las tablas antes de cargar (mientras se recarga las consultas verían tablas vacías o a medias). Borrar las keys que ya no están en Gold (habría que leer la tabla entera para compararla). Carga incremental por fecha o `run_id` (Gold se recalcula entero de todas formas). Poner el gate dentro de la función que escribe (también la usa el streaming, que no depende de Gold). Comparar las cantidades del manifest con los parquet (la reconciliation ya se hizo en `gold`). Mandar los null como null (cada uno es un tombstone).
+- **Consecuencias**: Recargar el mismo Gold deja las mismas rows; los `count_*.cql` lo muestran. Si un Gold nuevo ya no tiene una key, su row queda en la tabla, y un null no borra un valor anterior; con Landing inmutable y Gold recalculado completo no pasa, y si pasa hay que vaciar la tabla antes de cargar. `CREATE TABLE IF NOT EXISTS` no cambia una tabla existente: si cambia un DDL hay que borrar la tabla. Detalle en [docs/serving.md](docs/serving.md).
+- **Estado**: Aceptada.

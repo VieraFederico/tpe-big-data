@@ -1,0 +1,80 @@
+2026-11-14 22:18:19,152 INFO pipeline - Log de la corrida: /app/evidence/logs/pipeline_20261114T221819Z-ad1d25.log
+2026-11-14 22:18:19,153 INFO pipeline - Pipeline: run_id=20261114T221819Z-ad1d25, pasos=['bronze_batch', 'bronze_stream', 'silver', 'gold', 'serving'], lake=/app/data/datalake, serving=astra
+2026-11-14 22:18:22,536 INFO pipeline - == bronze_batch: inicio
+2026-11-14 22:18:30,633 INFO src.bronze.batch.ingest - bronze/customers_orgs: {'read': 80, 'quarantine': 0, 'written': 80, 'exact_duplicates': 0, 'key_conflicts': 0, 'duplicates': 0}
+2026-11-14 22:18:30,675 INFO src.common.lake - bronze/customers_orgs (en disco) -> /app/data/datalake/bronze/customers_orgs | 1 particiones | 1 archivos | 0.0 MB (prom. 0.01 MB/archivo)
+2026-11-14 22:18:30,688 INFO src.common.lake - quarantine/bronze/customers_orgs (en disco) -> /app/data/datalake/quarantine/bronze/customers_orgs | 0 particiones | 0 archivos | 0.0 MB (prom. 0.00 MB/archivo)
+2026-11-14 22:18:33,420 INFO src.bronze.batch.ingest - bronze/users: {'read': 800, 'quarantine': 0, 'written': 800, 'exact_duplicates': 0, 'key_conflicts': 0, 'duplicates': 0}
+2026-11-14 22:18:33,440 INFO src.common.lake - bronze/users (en disco) -> /app/data/datalake/bronze/users | 1 particiones | 1 archivos | 0.0 MB (prom. 0.02 MB/archivo)
+2026-11-14 22:18:33,451 INFO src.common.lake - quarantine/bronze/users (en disco) -> /app/data/datalake/quarantine/bronze/users | 0 particiones | 0 archivos | 0.0 MB (prom. 0.00 MB/archivo)
+2026-11-14 22:18:35,613 INFO src.bronze.batch.ingest - bronze/resources: {'read': 400, 'quarantine': 0, 'written': 400, 'exact_duplicates': 0, 'key_conflicts': 0, 'duplicates': 0}
+2026-11-14 22:18:35,633 INFO src.common.lake - bronze/resources (en disco) -> /app/data/datalake/bronze/resources | 1 particiones | 1 archivos | 0.0 MB (prom. 0.01 MB/archivo)
+2026-11-14 22:18:35,646 INFO src.common.lake - quarantine/bronze/resources (en disco) -> /app/data/datalake/quarantine/bronze/resources | 0 particiones | 0 archivos | 0.0 MB (prom. 0.00 MB/archivo)
+2026-11-14 22:18:37,626 INFO src.bronze.batch.ingest - bronze/billing_monthly: {'read': 240, 'quarantine': 0, 'written': 240, 'exact_duplicates': 0, 'key_conflicts': 0, 'duplicates': 0}
+2026-11-14 22:18:37,649 INFO src.common.lake - bronze/billing_monthly (en disco) -> /app/data/datalake/bronze/billing_monthly | 1 particiones | 1 archivos | 0.0 MB (prom. 0.01 MB/archivo)
+2026-11-14 22:18:37,662 INFO src.common.lake - quarantine/bronze/billing_monthly (en disco) -> /app/data/datalake/quarantine/bronze/billing_monthly | 0 particiones | 0 archivos | 0.0 MB (prom. 0.00 MB/archivo)
+2026-11-14 22:18:39,622 INFO src.bronze.batch.ingest - bronze/support_tickets: {'read': 1000, 'quarantine': 0, 'written': 1000, 'exact_duplicates': 0, 'key_conflicts': 0, 'duplicates': 0}
+2026-11-14 22:18:39,637 INFO src.common.lake - bronze/support_tickets (en disco) -> /app/data/datalake/bronze/support_tickets | 1 particiones | 1 archivos | 0.0 MB (prom. 0.02 MB/archivo)
+2026-11-14 22:18:39,647 INFO src.common.lake - quarantine/bronze/support_tickets (en disco) -> /app/data/datalake/quarantine/bronze/support_tickets | 0 particiones | 0 archivos | 0.0 MB (prom. 0.00 MB/archivo)
+2026-11-14 22:18:41,554 INFO src.bronze.batch.ingest - bronze/marketing_touches: {'read': 1500, 'quarantine': 0, 'written': 1500, 'exact_duplicates': 0, 'key_conflicts': 0, 'duplicates': 0}
+2026-11-14 22:18:41,571 INFO src.common.lake - bronze/marketing_touches (en disco) -> /app/data/datalake/bronze/marketing_touches | 1 particiones | 1 archivos | 0.0 MB (prom. 0.02 MB/archivo)
+2026-11-14 22:18:41,581 INFO src.common.lake - quarantine/bronze/marketing_touches (en disco) -> /app/data/datalake/quarantine/bronze/marketing_touches | 0 particiones | 0 archivos | 0.0 MB (prom. 0.00 MB/archivo)
+2026-11-14 22:18:43,567 INFO src.bronze.batch.ingest - bronze/nps_surveys: {'read': 92, 'quarantine': 0, 'written': 92, 'exact_duplicates': 0, 'key_conflicts': 0, 'duplicates': 0}
+2026-11-14 22:18:43,587 INFO src.common.lake - bronze/nps_surveys (en disco) -> /app/data/datalake/bronze/nps_surveys | 1 particiones | 1 archivos | 0.0 MB (prom. 0.00 MB/archivo)
+2026-11-14 22:18:43,601 INFO src.common.lake - quarantine/bronze/nps_surveys (en disco) -> /app/data/datalake/quarantine/bronze/nps_surveys | 0 particiones | 0 archivos | 0.0 MB (prom. 0.00 MB/archivo)
+2026-11-14 22:18:43,635 INFO pipeline - == bronze_batch: ok en 21.1s
+2026-11-14 22:18:43,636 INFO pipeline - == bronze_stream: inicio
+2026-11-14 22:18:56,221 INFO src.bronze.streaming.ingest - Micro-lote 0: 3600 a bronze, 0 a quarantine
+2026-11-14 22:19:08,707 INFO src.bronze.streaming.ingest - Micro-lote 1: 3600 a bronze, 0 a quarantine
+2026-11-14 22:19:20,115 INFO src.bronze.streaming.ingest - Micro-lote 2: 3600 a bronze, 0 a quarantine
+2026-11-14 22:19:31,549 INFO src.bronze.streaming.ingest - Micro-lote 3: 3600 a bronze, 0 a quarantine
+2026-11-14 22:19:42,693 INFO src.bronze.streaming.ingest - Micro-lote 4: 3600 a bronze, 0 a quarantine
+2026-11-14 22:19:54,076 INFO src.bronze.streaming.ingest - Micro-lote 5: 3600 a bronze, 0 a quarantine
+2026-11-14 22:20:05,130 INFO src.bronze.streaming.ingest - Micro-lote 6: 3600 a bronze, 0 a quarantine
+2026-11-14 22:20:16,287 INFO src.bronze.streaming.ingest - Micro-lote 7: 3600 a bronze, 0 a quarantine
+2026-11-14 22:20:30,481 INFO src.bronze.streaming.ingest - Micro-lote 8: 3600 a bronze, 0 a quarantine
+2026-11-14 22:20:41,783 INFO src.bronze.streaming.ingest - Micro-lote 9: 3600 a bronze, 0 a quarantine
+2026-11-14 22:20:53,271 INFO src.bronze.streaming.ingest - Micro-lote 10: 3600 a bronze, 0 a quarantine
+2026-11-14 22:21:04,537 INFO src.bronze.streaming.ingest - Micro-lote 11: 3600 a bronze, 0 a quarantine
+2026-11-14 22:21:20,612 INFO src.bronze.streaming.ingest - bronze/usage_events: {'micro_batches': 12, 'rows_read': 43200, 'dropped_by_watermark': 0, 'dropped_duplicates': 0, 'bronze_total': 43200, 'quarantine_total': 0}
+2026-11-14 22:21:22,640 INFO src.common.lake - bronze/usage_events (en disco) -> /app/data/datalake/bronze/usage_events | 60 particiones | 720 archivos | 7.4 MB (prom. 0.01 MB/archivo)
+2026-11-14 22:21:22,648 INFO src.common.lake - quarantine/bronze/usage_events (en disco) -> /app/data/datalake/quarantine/bronze/usage_events | 0 particiones | 0 archivos | 0.0 MB (prom. 0.00 MB/archivo)
+2026-11-14 22:21:22,649 INFO pipeline - == bronze_stream: ok en 159.0s
+2026-11-14 22:21:22,650 INFO pipeline - == silver: inicio
+2026-11-14 22:21:24,637 INFO src.silver.build - silver/customers_orgs: {'bronze_rows': 80, 'silver_rows': 80, 'quarantine_rows': 0, 'duplicates_dropped': 0}
+2026-11-14 22:21:24,652 INFO src.common.lake - silver/customers_orgs (en disco) -> /app/data/datalake/silver/customers_orgs | 1 particiones | 1 archivos | 0.0 MB (prom. 0.01 MB/archivo)
+2026-11-14 22:21:26,010 INFO src.silver.build - silver/users: {'bronze_rows': 800, 'silver_rows': 800, 'quarantine_rows': 0, 'duplicates_dropped': 0}
+2026-11-14 22:21:26,021 INFO src.common.lake - silver/users (en disco) -> /app/data/datalake/silver/users | 1 particiones | 1 archivos | 0.0 MB (prom. 0.03 MB/archivo)
+2026-11-14 22:21:27,630 INFO src.silver.build - silver/resources: {'bronze_rows': 400, 'silver_rows': 400, 'quarantine_rows': 0, 'duplicates_dropped': 0}
+2026-11-14 22:21:27,642 INFO src.common.lake - silver/resources (en disco) -> /app/data/datalake/silver/resources | 1 particiones | 1 archivos | 0.0 MB (prom. 0.01 MB/archivo)
+2026-11-14 22:21:29,771 INFO src.silver.build - silver/billing_monthly: {'bronze_rows': 240, 'silver_rows': 240, 'quarantine_rows': 0, 'duplicates_dropped': 0}
+2026-11-14 22:21:29,812 INFO src.common.lake - silver/billing_monthly (en disco) -> /app/data/datalake/silver/billing_monthly | 3 particiones | 3 archivos | 0.0 MB (prom. 0.01 MB/archivo)
+2026-11-14 22:21:31,599 INFO src.silver.build - silver/support_tickets: {'bronze_rows': 1000, 'silver_rows': 1000, 'quarantine_rows': 0, 'duplicates_dropped': 0}
+2026-11-14 22:21:31,611 INFO src.common.lake - silver/support_tickets (en disco) -> /app/data/datalake/silver/support_tickets | 1 particiones | 1 archivos | 0.0 MB (prom. 0.02 MB/archivo)
+2026-11-14 22:21:32,866 INFO src.silver.build - silver/marketing_touches: {'bronze_rows': 1500, 'silver_rows': 1500, 'quarantine_rows': 0, 'duplicates_dropped': 0}
+2026-11-14 22:21:32,877 INFO src.common.lake - silver/marketing_touches (en disco) -> /app/data/datalake/silver/marketing_touches | 1 particiones | 1 archivos | 0.0 MB (prom. 0.02 MB/archivo)
+2026-11-14 22:21:34,034 INFO src.silver.build - silver/nps_surveys: {'bronze_rows': 92, 'silver_rows': 92, 'quarantine_rows': 0, 'duplicates_dropped': 0}
+2026-11-14 22:21:34,045 INFO src.common.lake - silver/nps_surveys (en disco) -> /app/data/datalake/silver/nps_surveys | 1 particiones | 1 archivos | 0.0 MB (prom. 0.00 MB/archivo)
+2026-11-14 22:21:35,432 INFO src.silver.build - silver/orgs_scd2: {'silver_rows': 80}
+2026-11-14 22:21:35,444 INFO src.common.lake - silver/orgs_scd2 (en disco) -> /app/data/datalake/silver/orgs_scd2 | 1 particiones | 1 archivos | 0.0 MB (prom. 0.01 MB/archivo)
+2026-11-14 22:22:05,044 INFO src.silver.build - silver/usage_events: {'bronze_rows': 43200, 'silver_rows': 42989, 'quarantine_rows': 211, 'duplicates_dropped': 0}
+2026-11-14 22:22:05,642 INFO src.common.lake - silver/usage_events (en disco) -> /app/data/datalake/silver/usage_events | 60 particiones | 60 archivos | 3.4 MB (prom. 0.06 MB/archivo)
+2026-11-14 22:22:05,661 INFO src.common.lake - quarantine/silver/usage_events (en disco) -> /app/data/datalake/quarantine/silver/usage_events | 1 particiones | 1 archivos | 0.0 MB (prom. 0.05 MB/archivo)
+2026-11-14 22:22:20,993 INFO src.quality.report - Reporte de calidad en /app/evidence/quality/20261114T221819Z-ad1d25
+2026-11-14 22:22:21,008 INFO pipeline - == silver: ok en 58.4s
+2026-11-14 22:22:21,009 INFO pipeline - == gold: inicio
+2026-11-14 22:23:06,116 INFO src.gold.build - Conciliación ok: 57 chequeos
+2026-11-14 22:23:23,995 INFO src.common.lake - gold/org_daily_usage_by_service (en disco) -> /app/data/datalake/gold/org_daily_usage_by_service | 60 particiones | 60 archivos | 0.6 MB (prom. 0.01 MB/archivo)
+2026-11-14 22:23:44,495 INFO src.common.lake - gold/top_services_by_org_14d (en disco) -> /app/data/datalake/gold/top_services_by_org_14d | 60 particiones | 60 archivos | 0.4 MB (prom. 0.01 MB/archivo)
+2026-11-14 22:23:54,490 INFO src.common.lake - gold/cost_anomaly_mart (en disco) -> /app/data/datalake/gold/cost_anomaly_mart | 25 particiones | 25 archivos | 0.1 MB (prom. 0.00 MB/archivo)
+2026-11-14 22:23:56,288 INFO src.gold.build - gold: {'org_daily_usage_by_service': 11050, 'top_services_by_org_14d': 15599, 'cost_anomaly_mart': 37}
+2026-11-14 22:23:56,289 INFO pipeline - == gold: ok en 95.3s
+2026-11-14 22:23:56,291 INFO pipeline - == serving: inicio
+2026-11-14 22:24:03,289 INFO src.serving.cassandra_client - Sesión CQL abierta (target=astra, keyspace=cloud_analytics)
+2026-11-14 22:24:09,245 INFO src.serving.cassandra_writer - Cargando cost_anomaly_mart (target=astra, concurrency=32)
+2026-11-14 22:24:17,378 INFO src.serving.cassandra_writer - Carga cost_anomaly_mart: 37 filas escritas, 0 fallidas en 8.13s
+2026-11-14 22:24:18,438 INFO src.serving.cassandra_writer - Cargando org_daily_usage_by_service (target=astra, concurrency=32)
+2026-11-14 22:24:40,189 INFO src.serving.cassandra_writer - Carga org_daily_usage_by_service: 11050 filas escritas, 0 fallidas en 21.75s
+2026-11-14 22:24:41,199 INFO src.serving.cassandra_writer - Cargando top_services_by_org_14d (target=astra, concurrency=32)
+2026-11-14 22:24:55,625 INFO src.serving.cassandra_writer - Carga top_services_by_org_14d: 15599 filas escritas, 0 fallidas en 14.43s
+2026-11-14 22:24:55,626 INFO pipeline - == serving: ok en 59.3s

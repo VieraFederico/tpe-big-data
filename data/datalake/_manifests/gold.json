@@ -1,10 +1,10 @@
 {
-  "run_id": "20261114T191808Z-34bae8",
-  "written_at": "2026-11-14T19:18:18Z",
+  "run_id": "20261114T221819Z-ad1d25",
+  "written_at": "2026-11-14T22:23:56Z",
   "status": "ok",
   "inputs": {
-    "bronze_batch_run_id": "20261114T183817Z-e844b8",
-    "silver_run_id": "20261114T183817Z-e844b8"
+    "bronze_batch_run_id": "20261114T221819Z-ad1d25",
+    "silver_run_id": "20261114T221819Z-ad1d25"
   },
   "marts": {
     "org_daily_usage_by_service": 11050,

@@ -1,0 +1,6 @@
+rank,service,cost_14d_usd,requests_14d,window_start_date
+1,genai,447.3996,3455.0,2025-08-18
+2,compute,341.92049999999995,3935.0,2025-08-18
+3,analytics,208.4012,2568.0,2025-08-18
+4,storage,23.7086,997.0,2025-08-18
+5,networking,18.5535,1475.0,2025-08-18

@@ -1,0 +1,3 @@
+2026-11-14 22:42:55,855 INFO src.serving.cassandra_client - Sesión CQL abierta (target=astra, keyspace=cloud_analytics)
+2026-11-14 22:42:56,053 INFO queries - Consulta q1_daily_usage_by_range: 59 filas en 0.194s
+2026-11-14 22:42:56,642 INFO queries - Evidencia guardada en evidence/entrega-2/queries/q1_daily_usage_by_range.txt y evidence/entrega-2/queries/q1_daily_usage_by_range.csv

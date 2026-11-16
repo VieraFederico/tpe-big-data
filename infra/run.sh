@@ -17,7 +17,13 @@ Uso: ./infra/run.sh <comando> [args]
   run [pasos]              Corre el pipeline (todos, o p. ej. bronze_batch,bronze_stream)
   check                    Prueba la conexión a Cassandra/AstraDB
   query <archivo.cql> ...  Ejecuta una consulta y guarda evidencia (-p clave=valor)
-  test [args]              Corre los tests (pytest)
+  queries [carpeta]        Corre las consultas 1 y 2 con parámetros calculados desde Gold
+                           y guarda la evidencia (default: evidence/local)
+  idempotence              Cuenta filas del lake y del serving, vuelve a correr el pipeline
+                           y compara (evidence/entrega-2/idempotencia.csv y .md)
+  evidence                 Regenera toda la evidencia de la entrega en evidence/entrega-2:
+                           clean, run, mapreduce-check, queries, idempotence (borra el lake)
+  test [args]            Corre los tests (pytest)
   lint                     Chequea estilo y tipos (ruff check, ruff format --check, mypy)
   mapreduce-check          Compara el mart diario de Gold con MapReduce vs. DataFrames
   shell                    Abre una terminal dentro del contenedor
@@ -75,6 +81,25 @@ case "$command" in
     [[ $# -ge 1 ]] || { echo "Falta el archivo .cql"; exit 1; }
     ensure_cassandra
     pipeline python -m src.serving.queries "$@"
+    ;;
+  queries)
+    ensure_cassandra
+    pipeline python -m src.evidence.queries "$@"
+    ;;
+  idempotence)
+    ensure_cassandra
+    pipeline python -m src.evidence.idempotence
+    ;;
+  evidence)
+    # Cada paso corre este mismo script; set -e corta en el primer error.
+    self="$REPO_ROOT/infra/run.sh"
+    bash "$self" clean
+    bash "$self" run
+    bash "$self" mapreduce-check
+    bash "$self" queries evidence/entrega-2/queries
+    bash "$self" idempotence
+    pipeline python -m src.evidence.collect
+    echo "Evidencia lista en evidence/entrega-2/"
     ;;
   test)
     pipeline python -m pytest tests "$@"

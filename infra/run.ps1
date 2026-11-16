@@ -19,7 +19,13 @@ Uso: .\infra\run.ps1 <comando> [args]
   run [pasos]              Corre el pipeline (todos, o p. ej. bronze_batch,bronze_stream)
   check                    Prueba la conexión a Cassandra/AstraDB
   query <archivo.cql> ...  Ejecuta una consulta y guarda evidencia (-p clave=valor)
-  test [args]              Corre los tests (pytest)
+  queries [carpeta]        Corre las consultas 1 y 2 con parámetros calculados desde Gold
+                           y guarda la evidencia (default: evidence/local)
+  idempotence              Cuenta filas del lake y del serving, vuelve a correr el pipeline
+                           y compara (evidence/entrega-2/idempotencia.csv y .md)
+  evidence                 Regenera toda la evidencia de la entrega en evidence/entrega-2:
+                           clean, run, mapreduce-check, queries, idempotence (borra el lake)
+  test [args]            Corre los tests (pytest)
   lint                     Chequea estilo y tipos (ruff check, ruff format --check, mypy)
   mapreduce-check          Compara el mart diario de Gold con MapReduce vs. DataFrames
   shell                    Abre una terminal dentro del contenedor
@@ -58,6 +64,13 @@ function Invoke-Pipeline {
     Invoke-Compose run --rm pipeline @args
 }
 
+# Corre este mismo script con otro comando y corta si ese comando falla.
+function Invoke-Self {
+    $global:LASTEXITCODE = 0
+    & $PSCommandPath @args
+    if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
+}
+
 Initialize-Env
 
 switch ($Command) {
@@ -76,6 +89,23 @@ switch ($Command) {
         if ($Rest.Count -lt 1) { Write-Host "Falta el archivo .cql"; exit 1 }
         Start-CassandraIfLocal
         Invoke-Pipeline python -m src.serving.queries @Rest
+    }
+    "queries" {
+        Start-CassandraIfLocal
+        Invoke-Pipeline python -m src.evidence.queries @Rest
+    }
+    "idempotence" {
+        Start-CassandraIfLocal
+        Invoke-Pipeline python -m src.evidence.idempotence
+    }
+    "evidence" {
+        Invoke-Self clean
+        Invoke-Self run
+        Invoke-Self mapreduce-check
+        Invoke-Self queries evidence/entrega-2/queries
+        Invoke-Self idempotence
+        Invoke-Pipeline python -m src.evidence.collect
+        Write-Host "Evidencia lista en evidence/entrega-2/"
     }
     "test" { Invoke-Pipeline python -m pytest tests @Rest }
     "lint" { Invoke-Pipeline sh -c "ruff check . && ruff format --check . && mypy" }

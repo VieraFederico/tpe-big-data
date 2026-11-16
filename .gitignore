@@ -10,6 +10,8 @@ data/datalake/gold/
 data/datalake/quarantine/
 data/datalake/checkpoints/
 
+evidence/local/
+
 __pycache__/
 *.pyc
 .venv/

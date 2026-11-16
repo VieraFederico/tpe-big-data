@@ -60,6 +60,4 @@ Cuánto tarda: la carga completa del 2026-11-14 contra Astra tardó unos 7 minut
 Al terminar:
 
 1. Revisar que nada de `evidence/` tenga tokens, nombres de bundle ni rutas con usuarios, con el comando de [Gobierno](../../docs/gobierno/README.md#acceso-y-secretos). Los logs originales de `evidence/logs/` no pasan por el reemplazo que se hace al copiarlos acá.
-2. Pasarle al grupo el `run_id` (el de `data/datalake/_manifests/gold.json`, que es el de la segunda corrida), la duración que mostró `time`, la fecha y si el comando terminó con código 0. Si falló, el último log de `evidence/logs/`.
-
-Con eso se completa la tabla [Corrida](#corrida) y los archivos de arriba pasan a ser links.
+2. Actualizar la tabla [Corrida](#corrida) con el `run_id` (el de `data/datalake/_manifests/gold.json`, que es el de la segunda corrida), la duración que mostró `time` y la fecha. Si el comando no terminó con código 0, el último log de `evidence/logs/` dice en qué paso se cortó.

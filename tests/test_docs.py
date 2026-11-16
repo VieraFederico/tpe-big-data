@@ -1,6 +1,8 @@
 """Chequeos de la documentación versionada: links, READMEs y secciones obligatorias."""
 
+import csv
 import fnmatch
+import json
 import os
 import re
 import shutil
@@ -10,11 +12,19 @@ from functools import cache
 from pathlib import Path
 from urllib.parse import unquote
 
+import pytest
+
+from src.evidence.collect import SCHEMAS_FILE
+from src.evidence.inventory import DELIVERY_DIR
 from src.pipeline import STEPS
+from src.quality.report import QUALITY_DIR, RULE_COUNTS_FILE, SAMPLES_DIR
 from src.serving.cassandra_writer import SCHEMA_DIR
 
 # En Docker la documentación no está en la imagen: compose monta el repo en REPO_PATH.
 REPO = Path(os.getenv("REPO_PATH") or Path(__file__).resolve().parent.parent)
+
+# Evidencia de la corrida de entrega; los chequeos que la usan se saltean hasta que exista.
+DELIVERY = REPO / "evidence" / DELIVERY_DIR
 
 # Un link en una línea con esta marca apunta a evidencia que todavía no se generó.
 PENDING = "pendiente de corrida"
@@ -55,6 +65,8 @@ FEEDBACK_DIMENSIONS = [
 ]
 PRIORITIES = {"alta", "media", "baja"}
 NOTEBOOK = "00_exploracion_datos.ipynb"
+# Los maestros de Silver se documentan en texto: las columnas de Bronze sin ingest_date, más estas.
+SILVER_MASTER_COLUMNS = {"dq_flags", "ingest_ts", "source_file", "run_id"}
 
 _LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)\s]+)[^)]*\)")
 _FENCE_RE = re.compile(r"^\s*(```|~~~)")
@@ -63,6 +75,9 @@ _URL_SCHEME_RE = re.compile(r"^[a-z][a-z0-9+.-]*:", re.IGNORECASE)
 _HEADING_RE = re.compile(r"^## (.+?)\s*$", re.MULTILINE)
 _ENV_VAR_RE = re.compile(r"^#?\s*([A-Z][A-Z0-9_]*)=", re.MULTILINE)
 _SEPARATOR_RE = re.compile(r"^\|[\s:|-]+\|$")
+_SUBSECTION_RE = re.compile(r"^#{2,3} (.+?)\s*$(.*?)(?=^#{2,3} |\Z)", re.MULTILINE | re.DOTALL)
+_CODE_SPAN_RE = re.compile(r"`([^`]+)`")
+_DDL_COLUMN_RE = re.compile(r"^\s+(\w+) [\w<>, ]+,$", re.MULTILINE)
 
 
 def versioned_files(root: Path) -> list[Path]:
@@ -361,3 +376,202 @@ def test_el_notebook_de_exploracion_tiene_el_nombre_que_cita_el_informe():
         for path in texts
         if old_name.search(path.read_text(encoding="utf-8"))
     ] == []
+
+
+def _subsections(text: str) -> dict[str, str]:
+    """Texto de cada sección ``##`` o ``###``, por título sin backticks."""
+    return {title.strip("`"): body for title, body in _SUBSECTION_RE.findall(text)}
+
+
+def _column_names(text: str) -> set[str]:
+    """Columnas nombradas en la celda ``Columna`` de las tablas del texto."""
+    cells = " ".join(row.get("Columna", "") for row in _table_rows(text))
+    return set(_CODE_SPAN_RE.findall(cells))
+
+
+def _documented_columns(dataset: str, sections: dict[str, str]) -> set[str]:
+    """Columnas que el diccionario documenta para ``zona/dataset``."""
+    zone, _, name = dataset.partition("/")
+    if dataset in sections:
+        return _column_names(sections[dataset])
+    if zone == "silver" and f"bronze/{name}" in sections:
+        added = [
+            row["Columna"]
+            for row in _table_rows(sections["Maestros de Silver"])
+            if row["Dataset"] == f"`{dataset}`"
+        ]
+        source = _column_names(sections[f"bronze/{name}"]) - {"ingest_date"}
+        return source | SILVER_MASTER_COLUMNS | set(_CODE_SPAN_RE.findall(" ".join(added)))
+    if zone == "quarantine":
+        # Lo rechazado conserva las columnas de entrada, que salen del dataset de Bronze.
+        quarantine = sections["Quarantine"]
+        columns = _column_names(quarantine) | _documented_columns(
+            f"bronze/{name.partition('/')[2]}", sections
+        )
+        for row in _table_rows(quarantine):
+            pattern = re.sub(r"<[^>]+>", "*", row.get("Dataset", "").strip("`"))
+            if pattern and fnmatch.fnmatchcase(name, pattern.removeprefix("quarantine/")):
+                for span in _CODE_SPAN_RE.findall(row["Columnas de entrada"]):
+                    columns |= _documented_columns(span, sections) if "/" in span else {span}
+        return columns
+    return set()
+
+
+def undocumented_columns(dictionary: str, schemas_file: Path) -> list[str]:
+    """Columnas de ``schemas.json`` que el diccionario no documenta, como ``dataset.columna``."""
+    sections = _subsections(dictionary)
+    schemas: dict[str, list[dict[str, str]]] = json.loads(schemas_file.read_text(encoding="utf-8"))
+    return [
+        f"{dataset}.{column['columna']}"
+        for dataset, columns in sorted(schemas.items())
+        for column in columns
+        if column["columna"] not in _documented_columns(dataset, sections)
+    ]
+
+
+def quality_mismatches(catalog: Path, rule_counts: Path) -> list[str]:
+    """Reglas de ``rule_counts.csv`` que el catálogo no muestra con las mismas rows y su muestra."""
+    documented = {}
+    for row in _table_rows(catalog.read_text(encoding="utf-8")):
+        if "Muestra" in row:
+            # La tabla de eventos no tiene columna Dataset: todas sus reglas son de usage_events.
+            dataset = row.get("Dataset", "usage_events").strip("`")
+            documented[(dataset, row["`rule_id`"].strip("`"))] = row
+    problems = []
+    with rule_counts.open(newline="", encoding="utf-8") as csv_file:
+        for rule in csv.DictReader(csv_file):
+            name = f"{rule['dataset']}/{rule['rule_id']}"
+            row = documented.get((rule["dataset"], rule["rule_id"]))
+            if row is None:
+                problems.append(f"{name}: no está en el catálogo")
+                continue
+            rows = rule["rows_affected"]
+            if row["Rows"] != rows:
+                problems.append(f"{name}: {row['Rows']} rows en el catálogo, {rows} en la corrida")
+            sample = rule_counts.parent / SAMPLES_DIR / f"{rule['dataset']}__{rule['rule_id']}.csv"
+            links = {
+                (catalog.parent / unquote(link)).resolve()
+                for link in _LINK_RE.findall(row["Muestra"])
+            }
+            if int(rows) > 0 and (sample.resolve() not in links or not sample.is_file()):
+                problems.append(f"{name}: falta el link a su muestra")
+    return problems
+
+
+def test_el_diccionario_documenta_cada_columna_de_cassandra():
+    sections = _subsections(_section(_read("docs/diccionario-datos.md"), "Cassandra/AstraDB"))
+
+    for ddl in sorted(SCHEMA_DIR.glob("*.cql")):
+        columns = _DDL_COLUMN_RE.findall(ddl.read_text(encoding="utf-8"))
+        assert columns, ddl.name
+        assert sorted(set(columns) - _column_names(sections[ddl.stem])) == [], ddl.stem
+
+
+def test_el_diccionario_documenta_cada_columna_del_lake():
+    schemas_file = DELIVERY / SCHEMAS_FILE
+    if not schemas_file.is_file():
+        pytest.skip(f"Todavía no hay {SCHEMAS_FILE}: lo genera ./infra/run.sh evidence")
+
+    assert undocumented_columns(_read("docs/diccionario-datos.md"), schemas_file) == []
+
+
+def test_el_catalogo_de_calidad_coincide_con_la_corrida_de_entrega():
+    rule_counts = DELIVERY / QUALITY_DIR / RULE_COUNTS_FILE
+    if not rule_counts.is_file():
+        pytest.skip(f"Todavía no hay {RULE_COUNTS_FILE}: lo genera ./infra/run.sh evidence")
+
+    assert quality_mismatches(REPO / "docs" / "calidad.md", rule_counts) == []
+
+
+DICTIONARY_SAMPLE = """\
+### `bronze/users`
+
+| Columna | Tipo | Descripción |
+| :--- | :--- | :--- |
+| `user_id` | string | Usuario. |
+| `ingest_ts`, `ingest_date` | timestamp, date | Columnas técnicas. |
+
+## Silver
+
+### Maestros de Silver
+
+| Dataset | Columna | Tipo | Descripción |
+| :--- | :--- | :--- | :--- |
+| `silver/users` | `tags` | array<string> | Nueva. |
+
+## Quarantine
+
+| Columna | Tipo | Descripción |
+| :--- | :--- | :--- |
+| `_rule_id` | string | Regla. |
+
+| Dataset | Grain | Columnas de entrada |
+| :--- | :--- | :--- |
+| `quarantine/bronze/<maestro>` | Una row. | Las de la fuente y `_corrupt_record`. |
+"""
+
+
+@pytest.mark.parametrize(
+    ("dataset", "column", "missing"),
+    [
+        ("bronze/users", "ingest_date", []),
+        ("silver/users", "tags", []),
+        ("silver/users", "dq_flags", []),
+        ("silver/users", "ingest_date", ["silver/users.ingest_date"]),
+        ("quarantine/bronze/users", "_corrupt_record", []),
+        ("quarantine/bronze/users", "_rule_id", []),
+        ("bronze/users", "email", ["bronze/users.email"]),
+        ("gold/otro", "x", ["gold/otro.x"]),
+    ],
+)
+def test_el_diccionario_se_compara_con_los_schemas_del_lake(tmp_path, dataset, column, missing):
+    schemas_file = tmp_path / SCHEMAS_FILE
+    schemas = {dataset: [{"columna": column, "tipo": "string"}]}
+    schemas_file.write_text(json.dumps(schemas), encoding="utf-8")
+
+    assert undocumented_columns(DICTIONARY_SAMPLE, schemas_file) == missing
+
+
+def _quality_files(tmp_path: Path, catalog_rows: str, sample: bool = True) -> tuple[Path, Path]:
+    rule_counts = tmp_path / "evidencia" / RULE_COUNTS_FILE
+    (rule_counts.parent / SAMPLES_DIR).mkdir(parents=True)
+    rule_counts.write_text(
+        "layer,dataset,rule_id,action,rows_affected\n"
+        "silver,usage_events,VALUE_NULL,flag,3\n"
+        "silver,users,LOGIN_BEFORE_CREATED,flag,0\n",
+        encoding="utf-8",
+    )
+    if sample:
+        (rule_counts.parent / SAMPLES_DIR / "usage_events__VALUE_NULL.csv").write_text("x\n")
+    catalog = tmp_path / "docs" / "calidad.md"
+    catalog.parent.mkdir()
+    catalog.write_text(catalog_rows, encoding="utf-8")
+    return catalog, rule_counts
+
+
+EVENT_RULES = """\
+| `rule_id` | Condición | Acción | Rows | Muestra |
+| :--- | :--- | :--- | ---: | :--- |
+| `VALUE_NULL` | `value` null | flag | {rows} | [muestra](../evidencia/samples/usage_events__VALUE_NULL.csv) |
+
+| `rule_id` | Dataset | Condición | Acción | Rows | Muestra |
+| :--- | :--- | :--- | :--- | ---: | :--- |
+| `LOGIN_BEFORE_CREATED` | `users` | login viejo | flag | 0 | |
+"""
+
+
+def test_el_catalogo_de_calidad_con_las_rows_y_muestras_de_la_corrida_pasa(tmp_path):
+    catalog, rule_counts = _quality_files(tmp_path, EVENT_RULES.format(rows=3))
+
+    assert quality_mismatches(catalog, rule_counts) == []
+
+
+def test_el_catalogo_de_calidad_con_otras_rows_o_sin_muestra_falla(tmp_path):
+    catalog, rule_counts = _quality_files(tmp_path, EVENT_RULES.format(rows=5), sample=False)
+    catalog.write_text(catalog.read_text(encoding="utf-8").replace("`LOGIN", "`OTRA"))
+
+    assert quality_mismatches(catalog, rule_counts) == [
+        "usage_events/VALUE_NULL: 5 rows en el catálogo, 3 en la corrida",
+        "usage_events/VALUE_NULL: falta el link a su muestra",
+        "users/LOGIN_BEFORE_CREATED: no está en el catálogo",
+    ]

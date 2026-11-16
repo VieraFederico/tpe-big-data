@@ -46,7 +46,7 @@ En PowerShell son los mismos comandos con `.\infra\run.ps1`. Para publicar en As
 
 ## Alternativa: Google Colab
 
-[`notebooks/colab_pipeline.ipynb`](notebooks/colab_pipeline.ipynb) corre el pipeline en Colab, sin Docker, contra AstraDB. Lee el token y el endpoint de Colab Secrets y usa el dataset del repo. Detalle en [`notebooks/README.md`](notebooks/README.md).
+[`notebooks/colab_pipeline.ipynb`](notebooks/colab_pipeline.ipynb) corre los cinco steps en Colab, sin Docker, publica en AstraDB y corre las consultas 1 y 2. Lee el token y el endpoint de Colab Secrets y usa el dataset del repo. Detalle en [`notebooks/README.md`](notebooks/README.md).
 
 ## Mapa del repositorio
 
@@ -108,6 +108,8 @@ Los tests de integración necesitan la Cassandra local levantada (`docker compos
 | Bronze no cambia al volver a correr `bronze_stream` | Es a propósito: el checkpoint recuerda qué archivos ya leyó. Para reprocesar desde cero, `./infra/run.sh clean` (borra lake y checkpoint juntos). |
 | Errores de columnas o paths después de actualizar el código | El lake se escribió con una versión anterior (por ejemplo, la quarantine antes iba en otra carpeta). `./infra/run.sh clean` y correr de nuevo; Landing no se toca. |
 | `queries` termina con código 1 | Gold no tiene datos para el 2025-08-31. Correr el pipeline completo antes. |
+| `idempotence` termina con código 1 | Algún conteo cambió entre la primera y la segunda corrida. `evidence/entrega-2/idempotencia.csv` muestra cuál (`igual = false`). |
+| `evidence` se corta a la mitad | Se corta en el primer paso que falla y deja el lake y `evidence/entrega-2/` a medias. El log del paso está en `evidence/logs/`; después de arreglarlo, volver a correr `evidence` entero (empieza borrando el lake). |
 | PowerShell no deja correr el script | `powershell -ExecutionPolicy Bypass -File .\infra\run.ps1 <comando>`. |
 
 ## Integrantes

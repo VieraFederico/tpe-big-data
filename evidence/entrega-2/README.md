@@ -38,12 +38,30 @@ Antes de la corrida de entrega se hizo una carga en AstraDB y se corrieron las c
 | [`../logs/queries_20261114T224249Z.log`](../logs/queries_20261114T224249Z.log), [`../logs/queries_20261114T224343Z.log`](../logs/queries_20261114T224343Z.log) | Ejecución de las consultas 1 y 2. |
 | [`../logs/check_connection_20261114T221737Z.log`](../logs/check_connection_20261114T221737Z.log) | Prueba de conexión a AstraDB antes de la carga. |
 
-## Cómo regenerarla
+## Cómo regenerar esta evidencia
 
-Con `SERVING_TARGET` configurado en `config/.env` (y, para Astra, el keyspace creado):
+La corre quien tenga las credenciales de Astra, desde la raíz del repo.
+
+Antes de empezar:
+
+- Docker con Compose v2 levantado.
+- `config/.env` con `SERVING_TARGET=astra`, `ASTRA_DB_APPLICATION_TOKEN` y `ASTRA_DB_API_ENDPOINT` (o `ASTRA_DB_SECURE_BUNDLE_PATH` con un bundle ya descargado en `secrets/`), como explica [`config/README.md`](../../config/README.md). Con token y endpoint, el bundle se descarga solo a `secrets/` en la primera conexión. Ni `config/.env` ni `secrets/` se versionan.
+- El keyspace `cloud_analytics` creado en Astra ([cómo](../../docs/serving.md#crear-el-keyspace-en-astradb)).
+- `./infra/run.sh check` conecta sin errores.
+
+Después:
 
 ```bash
-./infra/run.sh evidence
+time ./infra/run.sh evidence
 ```
 
-**Borra las salidas del lake** antes de empezar (Landing queda). Cada paso deja su log en `evidence/logs/` y la corrida se corta en el primer error.
+**Borra las salidas del lake** (`bronze/`, `silver/`, `gold/`, `quarantine/`, `checkpoints/`; Landing queda) y las vuelve a generar desde cero, y reemplaza los archivos de esta carpeta. En Astra las tablas se recargan por upsert, sin borrar nada. Cada paso deja su log en `evidence/logs/` y la corrida se corta en el primer error.
+
+Cuánto tarda: la carga completa del 2026-11-14 contra Astra tardó unos 7 minutos (`bronze_stream` y `gold` son lo más lento), y `evidence` corre el pipeline dos veces más los conteos de idempotencia, así que hay que contar entre 15 y 25 minutos. Contra la Cassandra local es bastante menos.
+
+Al terminar:
+
+1. Revisar que nada de `evidence/` tenga tokens, nombres de bundle ni rutas con usuarios, con el comando de [Gobierno](../../docs/gobierno/README.md#acceso-y-secretos). Los logs originales de `evidence/logs/` no pasan por el reemplazo que se hace al copiarlos acá.
+2. Pasarle al grupo el `run_id` (el de `data/datalake/_manifests/gold.json`, que es el de la segunda corrida), la duración que mostró `time`, la fecha y si el comando terminó con código 0. Si falló, el último log de `evidence/logs/`.
+
+Con eso se completa la tabla [Corrida](#corrida) y los archivos de arriba pasan a ser links.

@@ -12,4 +12,4 @@ Todo lo que dejan las corridas: logs, reportes de calidad, analítica y la evide
 
 `<ts>` es el timestamp UTC del comando (`YYYYMMDDTHHMMSSZ`) y `<run_id>` el de la corrida, que también queda en cada row que escribe ([data lake](../docs/data-lake.md#convenciones-de-nombres)). `quality/`, `analytics/` y `logs/` se versionan para que la evidencia de cada corrida se pueda revisar sin volver a correr nada.
 
-Nada de esta carpeta tiene secretos: el código no loguea el token de Astra, y la copia de logs a `entrega-2/logs/` borra nombres de bundle y rutas con usuarios.
+Nada de esta carpeta tiene que tener secretos. El código no loguea el token de Astra y la copia de logs a `entrega-2/logs/` borra nombres de bundle y rutas con usuarios, pero los logs de `logs/` quedan como salieron: antes de commitear, revisar con el comando de [Gobierno](../docs/gobierno/README.md#acceso-y-secretos).

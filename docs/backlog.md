@@ -26,6 +26,7 @@ Lo que falta después de la entrega 2, en las tres categorías que pide la consi
 | Retención automática por zona | baja | 4 | Informe, Tabla 8; D-25 |
 | Join temporal de los eventos contra `orgs_scd2` | baja | 4 | D-19, D-23 |
 | Watermark configurable para producción | baja | 2 | Informe 7.3; D-24 |
+| Que el gate de Gold tome un manifest incompleto (sin `datasets` o `ingest_date`) como check fallido; hoy corta con `KeyError` | baja | 1 | D-01 |
 
 ## Fuera de alcance
 

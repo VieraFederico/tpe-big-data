@@ -59,7 +59,7 @@ En la práctica Silver y Gold ya se reescriben enteros en cada corrida, así que
 
 ## Convenciones de nombres
 
-- **Datasets.** En Bronze y Silver, el nombre del archivo de Landing sin extensión (`customers_orgs`). Los derivados llevan un sufijo (`orgs_scd2`). En Gold, el nombre dice contenido y grain (`org_daily_usage_by_service`).
+- **Datasets.** En Bronze y Silver, el nombre del archivo de Landing sin extensión (`customers_orgs`). Los derivados llevan un sufijo (`orgs_scd2`). En Gold, el nombre dice contenido y grain (`org_daily_usage_by_service`). Cada carpeta dentro de una zona es un dataset: la evidencia (`storage.csv`, `schemas.json`) y el chequeo de idempotencia recorren las carpetas que hay en disco, salvo las que empiezan con `_` o `.`, así que una carpeta suelta en `bronze/` aparece como un dataset más.
 - **Columnas.** Minúscula y snake_case. Fechas terminan en `_date`, timestamps en `_ts`, montos en USD en `_usd`, booleanos empiezan con `is_`. Las columnas de quarantine empiezan con `_` (`_rule_id`).
 - **Serving.** Keyspace `cloud_analytics`; cada tabla se llama igual que el mart del que se carga.
 - **Corridas.** `run_id` = `YYYYMMDDTHHMMSSZ-xxxxxx` (UTC más 6 caracteres al azar). Queda en cada row escrita, en los manifests, en el nombre del log (`evidence/logs/pipeline_<run_id>.log`) y en las carpetas de `evidence/quality/` y `evidence/analytics/`.

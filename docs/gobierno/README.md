@@ -74,4 +74,9 @@ Secretos:
 - Los únicos secretos son `ASTRA_DB_APPLICATION_TOKEN` y `ASTRA_DB_API_ENDPOINT`. Van en `config/.env` o, en Colab, en Colab Secrets. `config/.env` y `secrets/` (donde se descarga el secure connect bundle) están en `.gitignore`.
 - El token se genera desde la consola de Astra y lo maneja solo quien corre contra Astra; no está en ningún archivo versionado ni en los logs.
 - Al copiar logs a `evidence/entrega-2/logs/`, [`src/evidence/collect.py`](../../src/evidence/collect.py) reemplaza tokens, nombres de bundle y rutas con nombres de usuario. Las rutas del lake en la evidencia son relativas a `DATALAKE_PATH`.
+- Los logs originales de `evidence/logs/` se versionan sin ese reemplazo, y el de una corrida que descargó el bundle tiene el nombre del archivo. Antes de commitear evidencia nueva, este comando no tiene que devolver nada:
+
+  ```bash
+  grep -rn -E "AstraCS:|secure-connect|/home/|C:\\\\Users" evidence/
+  ```
 - La Cassandra local no tiene autenticación: es solo para desarrollo y tests. Docker expone su puerto 9042 en la máquina, así que no conviene levantarla en una red compartida.

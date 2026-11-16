@@ -2,12 +2,12 @@
 
 | Notebook | Para qué |
 |---|---|
-| [`exploracion_datos.ipynb`](./exploracion_datos.ipynb) | Lectura y exploración inicial de las fuentes de Landing (primera entrega). Evidencia que respalda la sección 3 del documento de diseño. [Abrir en Colab](https://colab.research.google.com/github/VieraFederico/tpe-big-data/blob/main/notebooks/exploracion_datos.ipynb) |
+| [`00_exploracion_datos.ipynb`](./00_exploracion_datos.ipynb) | Lectura y exploración inicial de las fuentes de Landing (primera entrega). Evidencia que respalda la sección 3 del documento de diseño. [Abrir en Colab](https://colab.research.google.com/github/VieraFederico/tpe-big-data/blob/main/notebooks/00_exploracion_datos.ipynb) |
 | [`colab_pipeline.ipynb`](./colab_pipeline.ipynb) | Corre el pipeline en Google Colab, sin Docker, contra AstraDB. [Abrir en Colab](https://colab.research.google.com/github/VieraFederico/tpe-big-data/blob/main/notebooks/colab_pipeline.ipynb) |
 
-## `exploracion_datos.ipynb`
+## `00_exploracion_datos.ipynb`
 
-Se corrió en Google Colab montando el Google Drive del grupo, donde está el dataset provisto:
+Es el notebook que cita el informe de la entrega 1. Se corrió en Google Colab montando el Google Drive del grupo, donde está el dataset provisto:
 
 ```
 /content/drive/MyDrive/cloud_provider_challenge_dataset_v1/datalake/landing

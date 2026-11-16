@@ -28,7 +28,10 @@ services:
     environment:
       CASSANDRA_HOST: cassandra
       DATALAKE_PATH: /app/data/datalake
+      # Raíz del repo para tests/test_docs.py (la documentación no está en la imagen).
+      REPO_PATH: /repo
     volumes:
+      - ..:/repo:ro
       - ../src:/app/src
       - ../tests:/app/tests
       - ../pyproject.toml:/app/pyproject.toml:ro

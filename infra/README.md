@@ -41,6 +41,13 @@ Desde la raíz del repo, con `infra/run.sh` (Linux, Mac, Git Bash) o `infra/run.
 ./infra/run.sh run bronze_batch,bronze_stream    # solo algunos pasos
 ./infra/run.sh check                             # prueba la conexión a Cassandra/AstraDB
 ./infra/run.sh query src/serving/cql/queries/<consulta>.cql -p org_id=org_001   # consulta + evidencia
+./infra/run.sh queries                           # consultas 1 y 2 con parámetros desde Gold (evidence/local/)
+./infra/run.sh queries evidence/entrega-2/queries  # lo mismo, guardando en otra carpeta
+./infra/run.sh mapreduce-check                   # mart diario con MapReduce vs. DataFrames
+./infra/run.sh idempotence                       # conteos, segunda corrida completa y comparación
+./infra/run.sh evidence                          # toda la evidencia de la entrega (borra el lake)
+./infra/run.sh test                              # tests (args a pytest)
+./infra/run.sh lint                              # ruff check, ruff format --check, mypy
 ./infra/run.sh shell                             # terminal dentro del contenedor
 ./infra/run.sh clean                             # borra las salidas del lake (landing queda)
 ./infra/run.sh down                              # baja los contenedores
@@ -51,7 +58,16 @@ Desde la raíz del repo, con `infra/run.sh` (Linux, Mac, Git Bash) o `infra/run.
 .\infra\run.ps1 run bronze_batch
 ```
 
-Si `SERVING_TARGET=local`, los comandos que usan Cassandra (`check`, `query`, `run` con `serving`) la levantan solos. Si no existe `config/.env`, se crea desde el ejemplo.
+Si `SERVING_TARGET=local`, los comandos que usan Cassandra (`check`, `query`, `queries`, `idempotence`, `run` con `serving`) la levantan solos. Si no existe `config/.env`, se crea desde el ejemplo. Si `./infra/run.sh` da `permission denied`, el archivo perdió el permiso de ejecución: `chmod +x infra/run.sh`, o correrlo como `bash infra/run.sh <comando>`.
+
+### Comandos de evidencia
+
+| Comando | Qué hace | Qué deja |
+| :--- | :--- | :--- |
+| `queries [carpeta]` | Calcula org y fechas con `src.serving.evidence_params` y corre las consultas 1 y 2. Sale con 1 si Gold no tiene datos del 2025-08-31. | `q1_daily_usage_by_range` y `q2_top_services_14d` (`.txt` y `.csv`) en la carpeta, por defecto `evidence/local/` (ignorada por git). |
+| `mapreduce-check` | Corre el mart diario con MapReduce y con DataFrames sobre `silver/usage_events` y los compara. | `evidence/analytics/<run_id>/mapreduce_check.txt`. |
+| `idempotence` | Cuenta las rows de cada dataset del lake y de cada tabla de Cassandra (por partition), corre el pipeline completo otra vez y vuelve a contar. Sale con 1 si algún conteo cambió. | `evidence/entrega-2/idempotencia.csv` y `idempotencia.md`. |
+| `evidence` | `clean` → `run` → `mapreduce-check` → `queries evidence/entrega-2/queries` → `idempotence` → copia de la evidencia. Se corta en el primer error. **Borra el lake.** | Todo [`evidence/entrega-2/`](../evidence/entrega-2/README.md). |
 
 Si PowerShell bloquea el script por la política de ejecución: `powershell -ExecutionPolicy Bypass -File .\infra\run.ps1 <comando>`.
 
@@ -66,6 +82,8 @@ docker compose -f infra/docker-compose.yml run --rm pipeline python -m src.pipel
 - `src/` se monta en el contenedor: los cambios de código no requieren rebuild.
 - `data/` se monta en el contenedor: las salidas del lake (bronze, silver, gold...) quedan en el host.
 - `secrets/` guarda el bundle de Astra; está ignorado por git.
+- `tests/` y `evidence/` se montan igual que `src/`.
+- La raíz del repo se monta de solo lectura en `/repo` (`REPO_PATH`), para que [`tests/test_docs.py`](../tests/test_docs.py) revise la documentación aunque no esté dentro de la imagen.
 
 ## Limpieza
 

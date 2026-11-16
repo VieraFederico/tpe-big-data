@@ -174,26 +174,26 @@ El código no escribe el token en la evidencia ni en los logs.
 
 ### Evidencia de la entrega 2
 
-La carga y las consultas 1 y 2 se corrieron contra AstraDB el 2026-11-14 con la secuencia de [Cargar y consultar en AstraDB](#cargar-y-consultar-en-astradb). El índice de los archivos está en [`evidence/entrega-2/README.md`](../evidence/entrega-2/README.md).
+La carga y las consultas 1 y 2 de la entrega salen de la corrida de `./infra/run.sh evidence` contra AstraDB del 2026-11-16. El índice de los archivos está en [`evidence/entrega-2/README.md`](../evidence/entrega-2/README.md). Antes, el 2026-11-14, se había hecho una carga a mano con la secuencia de [Cargar y consultar en AstraDB](#cargar-y-consultar-en-astradb) ([log](../evidence/logs/pipeline_20261114T221819Z-ad1d25.log)), con las mismas rows por tabla.
 
-**Carga.** Corrida `20261114T221819Z-ad1d25`, pipeline completo con `serving=astra`. Log: [`evidence/logs/pipeline_20261114T221819Z-ad1d25.log`](../evidence/logs/pipeline_20261114T221819Z-ad1d25.log).
+**Carga.** Corrida `20261116T190339Z-4c011d`, pipeline completo con `serving=astra`. Log: [`evidence/entrega-2/logs/pipeline_20261116T190339Z-4c011d.log`](../evidence/entrega-2/logs/pipeline_20261116T190339Z-4c011d.log).
 
 | Tabla | Rows escritas | Fallidas | Tiempo |
 | :--- | ---: | ---: | ---: |
-| `org_daily_usage_by_service` | 11050 | 0 | 21.75s |
-| `top_services_by_org_14d` | 15599 | 0 | 14.43s |
-| `cost_anomaly_mart` | 37 | 0 | 8.13s |
+| `org_daily_usage_by_service` | 11050 | 0 | 17.44s |
+| `top_services_by_org_14d` | 15599 | 0 | 15.54s |
+| `cost_anomaly_mart` | 37 | 0 | 9.20s |
 
-Las rows coinciden con `marts` de `_manifests/gold.json` de esa corrida. El step `serving` entero (gate, DDL y las tres cargas) tardó 59.3s.
+Las rows coinciden con `marts` de `_manifests/gold.json`. El step `serving` entero (gate, DDL y las tres cargas) tardó 54.0s. La segunda corrida del chequeo de idempotencia (`20261116T191254Z-d2bc0d`) volvió a cargar las mismas rows por upsert y los conteos en Astra no cambiaron ([`idempotencia.md`](../evidence/entrega-2/idempotencia.md)).
 
-**Parámetros.** `evidence_params` eligió `org_chj755nf`, la org con más cost de 14 días al 2025-08-31 (1039.98 USD sumando sus services; log [`evidence/logs/evidence_params_20261114T223439Z.log`](../evidence/logs/evidence_params_20261114T223439Z.log)). El resto: `from_date = 2025-08-18`, `to_date = as_of_date = 2025-08-31`, `n = 5`.
+**Parámetros.** `evidence_params` eligió `org_chj755nf`, la org con más cost de 14 días al 2025-08-31 (1039.98 USD sumando sus services; log [`evidence_queries_20261116T191228Z.log`](../evidence/entrega-2/logs/evidence_queries_20261116T191228Z.log)). El resto: `from_date = 2025-08-18`, `to_date = as_of_date = 2025-08-31`, `n = 5`.
 
 **Consultas.** Las dos leen de `astra / keyspace cloud_analytics`:
 
 | Consulta | Parámetros | Rows | Tiempo | Evidencia |
 | :--- | :--- | ---: | ---: | :--- |
-| 1. Uso diario por rango | `org_id=org_chj755nf`, `from_date=2025-08-18`, `to_date=2025-08-31` | 59 | 0.194s | [`q1_daily_usage_by_range.txt`](../evidence/entrega-2/queries/q1_daily_usage_by_range.txt), [`.csv`](../evidence/entrega-2/queries/q1_daily_usage_by_range.csv) |
-| 2. Top-N de 14 días | `org_id=org_chj755nf`, `as_of_date=2025-08-31`, `n=5` | 5 | 0.191s | [`q2_top_services_14d.txt`](../evidence/entrega-2/queries/q2_top_services_14d.txt), [`.csv`](../evidence/entrega-2/queries/q2_top_services_14d.csv) |
+| 1. Uso diario por rango | `org_id=org_chj755nf`, `from_date=2025-08-18`, `to_date=2025-08-31` | 59 | 0.350s | [`q1_daily_usage_by_range.txt`](../evidence/entrega-2/queries/q1_daily_usage_by_range.txt), [`.csv`](../evidence/entrega-2/queries/q1_daily_usage_by_range.csv) |
+| 2. Top-N de 14 días | `org_id=org_chj755nf`, `as_of_date=2025-08-31`, `n=5` | 5 | 0.293s | [`q2_top_services_14d.txt`](../evidence/entrega-2/queries/q2_top_services_14d.txt), [`.csv`](../evidence/entrega-2/queries/q2_top_services_14d.csv) |
 
 La consulta 2 devuelve, de `rank` 1 a 5: `genai`, `compute`, `analytics`, `storage` y `networking`, todos con la ventana desde el 2025-08-18.
 

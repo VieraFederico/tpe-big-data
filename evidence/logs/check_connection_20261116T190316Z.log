@@ -1,0 +1,3 @@
+2026-11-16 19:03:22,407 INFO src.serving.cassandra_client - Sesión CQL abierta (target=astra, keyspace=cloud_analytics)
+2026-11-16 19:03:23,228 INFO check_connection - Conectado a astra (Cassandra 4.0.11.0-6819aa9c7f6c)
+2026-11-16 19:03:23,230 INFO check_connection - Tablas en cloud_analytics: ['cost_anomaly_mart', 'org_daily_usage_by_service', 'top_services_by_org_14d']

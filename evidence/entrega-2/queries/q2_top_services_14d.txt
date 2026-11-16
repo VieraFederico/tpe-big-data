@@ -1,9 +1,9 @@
 Consulta:   q2_top_services_14d
-Ejecutada:  2026-11-14T22:43:50+00:00
+Ejecutada:  2026-11-16T19:12:50+00:00
 Destino:    astra / keyspace cloud_analytics
 Parámetros: {'org_id': 'org_chj755nf', 'as_of_date': '2025-08-31', 'n': 5}
 Filas:      5
-Tiempo:     0.191s
+Tiempo:     0.293s
 
 CQL:
 -- Consulta 2: top-N de servicios por costo de los últimos 14 días de una organización.

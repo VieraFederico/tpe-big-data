@@ -6,33 +6,31 @@ Todo lo de esta carpeta sale de una sola corrida de `./infra/run.sh evidence`: b
 
 | Dato | Valor |
 | :--- | :--- |
-| Fecha | pendiente de corrida |
-| `run_id` | pendiente de corrida (el de la segunda corrida, la del chequeo de idempotencia, que es el estado del lake que describen los archivos) |
-| Destino del serving | pendiente de corrida |
-| Duración | pendiente de corrida |
-| Quickstart reproducido por | pendiente de corrida |
+| Fecha | 2026-11-16 |
+| `run_id` | `20261116T191254Z-d2bc0d` (el de la segunda corrida, la del chequeo de idempotencia, que es el estado del lake que describen los archivos). La primera corrida fue `20261116T190339Z-4c011d`. |
+| Destino del serving | `astra` (keyspace `cloud_analytics`) |
+| Duración | 18 minutos y medio (de 19:03:39 a 19:22:01 UTC, según los logs) |
+| Quickstart reproducido por | Santiago Nartallo |
 
 ## Archivos
 
 | Evidencia que pide la consigna | Archivo | Qué muestra |
 | :--- | :--- | :--- |
-| Logs | `logs/` (pendiente de corrida) | El último log de cada comando: `pipeline_*`, `mapreduce_check_*`, `evidence_queries_*` e `idempotence_*`. |
-| Rutas y tamaños | `storage.csv` (pendiente de corrida) | Por dataset y zona: ruta relativa al lake, particiones, archivos y MB. |
-| Conteos | `conteos.csv` (pendiente de corrida) | Conteos de cada step sacados de `_manifests/` (leídas, escritas, quarantine, duplicados, rows por mart). |
-| Schemas | `schemas.json` (pendiente de corrida) | Columnas y tipos de cada dataset del lake después de la corrida. |
-| Muestras de quarantine y calidad | `quality/` (pendiente de corrida) | `rule_counts.csv`, `reconciliation.csv` y `samples/` con hasta 20 rows por regla. |
-| Analítica | `analytics/` (pendiente de corrida) | `anomaly_summary.csv` y `mapreduce_check.txt`. |
+| Logs | [`logs/`](logs/) | El último log de cada comando: `pipeline_*`, `mapreduce_check_*`, `evidence_queries_*` e `idempotence_*`. |
+| Rutas y tamaños | [`storage.csv`](storage.csv) | Por dataset y zona: ruta relativa al lake, particiones, archivos y MB. |
+| Conteos | [`conteos.csv`](conteos.csv) | Conteos de cada step sacados de `_manifests/` (leídas, escritas, quarantine, duplicados, rows por mart). |
+| Schemas | [`schemas.json`](schemas.json) | Columnas y tipos de cada dataset del lake después de la corrida. |
+| Muestras de quarantine y calidad | [`quality/`](quality/) | `rule_counts.csv`, `reconciliation.csv` y `samples/` con hasta 20 rows por regla. |
+| Analítica | [`analytics/`](analytics/) | `anomaly_summary.csv` y `mapreduce_check.txt`. |
 | Capturas de consultas | [`queries/`](queries/) | Consultas 1 y 2: CQL, parámetros, destino, tiempo y rows en `.txt` y `.csv`. |
-| Idempotencia | `idempotencia.md` y `idempotencia.csv` (pendiente de corrida) | Rows de cada dataset del lake y de cada tabla de Cassandra antes y después de volver a correr todo el pipeline. |
+| Idempotencia | [`idempotencia.md`](idempotencia.md) y [`idempotencia.csv`](idempotencia.csv) | Rows de cada dataset del lake y de cada tabla de Cassandra antes y después de volver a correr todo el pipeline. |
 
 ## Serving en AstraDB del 2026-11-14
 
-Antes de la corrida de entrega se hizo una carga en AstraDB y se corrieron las consultas 1 y 2 a mano. Esos son los archivos que hay hoy en `queries/`; la corrida de entrega los reemplaza. Resumen y cómo se eligieron los parámetros: [`docs/serving.md`](../../docs/serving.md#evidencia-de-la-entrega-2).
+Antes de la corrida de entrega se hizo una carga en AstraDB y se corrieron las consultas 1 y 2 a mano. La corrida de entrega reemplazó esas consultas en `queries/`, con los mismos parámetros y las mismas rows (solo cambian la hora y el tiempo de cada consulta). Resumen de la carga de entrega y cómo se eligieron los parámetros: [`docs/serving.md`](../../docs/serving.md#evidencia-de-la-entrega-2). Los logs de la carga del 2026-11-14 quedan en `evidence/logs/`:
 
 | Archivo | Qué muestra |
 | :--- | :--- |
-| [`queries/q1_daily_usage_by_range.txt`](queries/q1_daily_usage_by_range.txt) y [`.csv`](queries/q1_daily_usage_by_range.csv) | Consulta 1: uso y cost diario por service de `org_chj755nf` del 2025-08-18 al 2025-08-31. |
-| [`queries/q2_top_services_14d.txt`](queries/q2_top_services_14d.txt) y [`.csv`](queries/q2_top_services_14d.csv) | Consulta 2: top 5 de services por cost de 14 días de `org_chj755nf` al 2025-08-31. |
 | [`../logs/pipeline_20261114T221819Z-ad1d25.log`](../logs/pipeline_20261114T221819Z-ad1d25.log) | Pipeline completo con `serving=astra`: rows escritas y fallidas por tabla y duración de cada step. |
 | [`../logs/evidence_params_20261114T223439Z.log`](../logs/evidence_params_20261114T223439Z.log) | Cálculo de los parámetros desde Gold (org elegida y su cost). |
 | [`../logs/queries_20261114T224249Z.log`](../logs/queries_20261114T224249Z.log), [`../logs/queries_20261114T224343Z.log`](../logs/queries_20261114T224343Z.log) | Ejecución de las consultas 1 y 2. |

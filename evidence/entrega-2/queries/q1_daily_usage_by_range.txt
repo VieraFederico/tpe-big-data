@@ -1,9 +1,9 @@
 Consulta:   q1_daily_usage_by_range
-Ejecutada:  2026-11-14T22:42:56+00:00
+Ejecutada:  2026-11-16T19:12:50+00:00
 Destino:    astra / keyspace cloud_analytics
 Parámetros: {'org_id': 'org_chj755nf', 'from_date': '2025-08-18', 'to_date': '2025-08-31'}
 Filas:      59
-Tiempo:     0.194s
+Tiempo:     0.35s
 
 CQL:
 -- Consulta 1: uso y costo diario por servicio de una organización en un rango de fechas.

@@ -1,0 +1,1176 @@
+{
+  "bronze/billing_monthly": [
+    {
+      "columna": "invoice_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "month",
+      "tipo": "date"
+    },
+    {
+      "columna": "subtotal",
+      "tipo": "double"
+    },
+    {
+      "columna": "credits",
+      "tipo": "double"
+    },
+    {
+      "columna": "taxes",
+      "tipo": "double"
+    },
+    {
+      "columna": "currency",
+      "tipo": "string"
+    },
+    {
+      "columna": "exchange_rate_to_usd",
+      "tipo": "double"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "ingest_date",
+      "tipo": "date"
+    }
+  ],
+  "bronze/customers_orgs": [
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_name",
+      "tipo": "string"
+    },
+    {
+      "columna": "industry",
+      "tipo": "string"
+    },
+    {
+      "columna": "hq_region",
+      "tipo": "string"
+    },
+    {
+      "columna": "plan_tier",
+      "tipo": "string"
+    },
+    {
+      "columna": "is_enterprise",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "signup_date",
+      "tipo": "date"
+    },
+    {
+      "columna": "sales_rep",
+      "tipo": "string"
+    },
+    {
+      "columna": "lifecycle_stage",
+      "tipo": "string"
+    },
+    {
+      "columna": "marketing_source",
+      "tipo": "string"
+    },
+    {
+      "columna": "nps_score",
+      "tipo": "double"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "ingest_date",
+      "tipo": "date"
+    }
+  ],
+  "bronze/marketing_touches": [
+    {
+      "columna": "touch_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "campaign",
+      "tipo": "string"
+    },
+    {
+      "columna": "channel",
+      "tipo": "string"
+    },
+    {
+      "columna": "timestamp",
+      "tipo": "date"
+    },
+    {
+      "columna": "clicked",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "converted",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "ingest_date",
+      "tipo": "date"
+    }
+  ],
+  "bronze/nps_surveys": [
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "survey_date",
+      "tipo": "date"
+    },
+    {
+      "columna": "nps_score",
+      "tipo": "double"
+    },
+    {
+      "columna": "comment",
+      "tipo": "string"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "ingest_date",
+      "tipo": "date"
+    }
+  ],
+  "bronze/resources": [
+    {
+      "columna": "resource_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "service",
+      "tipo": "string"
+    },
+    {
+      "columna": "region",
+      "tipo": "string"
+    },
+    {
+      "columna": "created_at",
+      "tipo": "date"
+    },
+    {
+      "columna": "state",
+      "tipo": "string"
+    },
+    {
+      "columna": "tags_json",
+      "tipo": "string"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "ingest_date",
+      "tipo": "date"
+    }
+  ],
+  "bronze/support_tickets": [
+    {
+      "columna": "ticket_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "category",
+      "tipo": "string"
+    },
+    {
+      "columna": "severity",
+      "tipo": "string"
+    },
+    {
+      "columna": "created_at",
+      "tipo": "date"
+    },
+    {
+      "columna": "resolved_at",
+      "tipo": "date"
+    },
+    {
+      "columna": "csat",
+      "tipo": "double"
+    },
+    {
+      "columna": "sla_breached",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "ingest_date",
+      "tipo": "date"
+    }
+  ],
+  "bronze/usage_events": [
+    {
+      "columna": "event_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "timestamp",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "resource_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "service",
+      "tipo": "string"
+    },
+    {
+      "columna": "region",
+      "tipo": "string"
+    },
+    {
+      "columna": "metric",
+      "tipo": "string"
+    },
+    {
+      "columna": "value",
+      "tipo": "string"
+    },
+    {
+      "columna": "unit",
+      "tipo": "string"
+    },
+    {
+      "columna": "cost_usd_increment",
+      "tipo": "double"
+    },
+    {
+      "columna": "schema_version",
+      "tipo": "int"
+    },
+    {
+      "columna": "carbon_kg",
+      "tipo": "double"
+    },
+    {
+      "columna": "genai_tokens",
+      "tipo": "bigint"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "ingest_date",
+      "tipo": "date"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "event_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "event_date",
+      "tipo": "date"
+    }
+  ],
+  "bronze/users": [
+    {
+      "columna": "user_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "email",
+      "tipo": "string"
+    },
+    {
+      "columna": "role",
+      "tipo": "string"
+    },
+    {
+      "columna": "active",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "created_at",
+      "tipo": "date"
+    },
+    {
+      "columna": "last_login",
+      "tipo": "date"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "ingest_date",
+      "tipo": "date"
+    }
+  ],
+  "gold/cost_anomaly_mart": [
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "service",
+      "tipo": "string"
+    },
+    {
+      "columna": "daily_cost_usd",
+      "tipo": "double"
+    },
+    {
+      "columna": "p99_usd",
+      "tipo": "double"
+    },
+    {
+      "columna": "threshold_usd",
+      "tipo": "double"
+    },
+    {
+      "columna": "anomaly_score",
+      "tipo": "double"
+    },
+    {
+      "columna": "robust_z",
+      "tipo": "double"
+    },
+    {
+      "columna": "detection_method",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "usage_date",
+      "tipo": "date"
+    }
+  ],
+  "gold/org_daily_usage_by_service": [
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "service",
+      "tipo": "string"
+    },
+    {
+      "columna": "daily_cost_usd",
+      "tipo": "double"
+    },
+    {
+      "columna": "requests",
+      "tipo": "double"
+    },
+    {
+      "columna": "cpu_hours",
+      "tipo": "double"
+    },
+    {
+      "columna": "storage_gb_hours",
+      "tipo": "double"
+    },
+    {
+      "columna": "carbon_kg",
+      "tipo": "double"
+    },
+    {
+      "columna": "genai_tokens",
+      "tipo": "bigint"
+    },
+    {
+      "columna": "event_count",
+      "tipo": "int"
+    },
+    {
+      "columna": "cost_anomaly_events",
+      "tipo": "int"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "usage_date",
+      "tipo": "date"
+    }
+  ],
+  "gold/top_services_by_org_14d": [
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "service",
+      "tipo": "string"
+    },
+    {
+      "columna": "window_start_date",
+      "tipo": "date"
+    },
+    {
+      "columna": "rank",
+      "tipo": "int"
+    },
+    {
+      "columna": "cost_14d_usd",
+      "tipo": "double"
+    },
+    {
+      "columna": "requests_14d",
+      "tipo": "double"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "as_of_date",
+      "tipo": "date"
+    }
+  ],
+  "quarantine/bronze/billing_monthly": [],
+  "quarantine/bronze/customers_orgs": [],
+  "quarantine/bronze/marketing_touches": [],
+  "quarantine/bronze/nps_surveys": [],
+  "quarantine/bronze/resources": [],
+  "quarantine/bronze/support_tickets": [],
+  "quarantine/bronze/usage_events": [],
+  "quarantine/bronze/users": [],
+  "quarantine/silver/usage_events": [
+    {
+      "columna": "event_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "timestamp",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "resource_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "service",
+      "tipo": "string"
+    },
+    {
+      "columna": "region",
+      "tipo": "string"
+    },
+    {
+      "columna": "metric",
+      "tipo": "string"
+    },
+    {
+      "columna": "value",
+      "tipo": "string"
+    },
+    {
+      "columna": "unit",
+      "tipo": "string"
+    },
+    {
+      "columna": "cost_usd_increment",
+      "tipo": "double"
+    },
+    {
+      "columna": "schema_version",
+      "tipo": "int"
+    },
+    {
+      "columna": "carbon_kg",
+      "tipo": "double"
+    },
+    {
+      "columna": "genai_tokens",
+      "tipo": "bigint"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "event_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "event_date",
+      "tipo": "date"
+    },
+    {
+      "columna": "_rule_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "_quarantine_reason",
+      "tipo": "string"
+    },
+    {
+      "columna": "_raw",
+      "tipo": "string"
+    },
+    {
+      "columna": "_quarantine_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "ingest_date",
+      "tipo": "date"
+    }
+  ],
+  "silver/billing_monthly": [
+    {
+      "columna": "invoice_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "month",
+      "tipo": "date"
+    },
+    {
+      "columna": "subtotal",
+      "tipo": "double"
+    },
+    {
+      "columna": "credits",
+      "tipo": "double"
+    },
+    {
+      "columna": "taxes",
+      "tipo": "double"
+    },
+    {
+      "columna": "currency",
+      "tipo": "string"
+    },
+    {
+      "columna": "exchange_rate_to_usd",
+      "tipo": "double"
+    },
+    {
+      "columna": "revenue_usd",
+      "tipo": "double"
+    },
+    {
+      "columna": "dq_flags",
+      "tipo": "array<string>"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "billing_month",
+      "tipo": "string"
+    }
+  ],
+  "silver/customers_orgs": [
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_name",
+      "tipo": "string"
+    },
+    {
+      "columna": "industry",
+      "tipo": "string"
+    },
+    {
+      "columna": "hq_region",
+      "tipo": "string"
+    },
+    {
+      "columna": "plan_tier",
+      "tipo": "string"
+    },
+    {
+      "columna": "is_enterprise",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "signup_date",
+      "tipo": "date"
+    },
+    {
+      "columna": "sales_rep",
+      "tipo": "string"
+    },
+    {
+      "columna": "lifecycle_stage",
+      "tipo": "string"
+    },
+    {
+      "columna": "marketing_source",
+      "tipo": "string"
+    },
+    {
+      "columna": "nps_score",
+      "tipo": "double"
+    },
+    {
+      "columna": "dq_flags",
+      "tipo": "array<string>"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    }
+  ],
+  "silver/marketing_touches": [
+    {
+      "columna": "touch_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "campaign",
+      "tipo": "string"
+    },
+    {
+      "columna": "channel",
+      "tipo": "string"
+    },
+    {
+      "columna": "timestamp",
+      "tipo": "date"
+    },
+    {
+      "columna": "clicked",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "converted",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "dq_flags",
+      "tipo": "array<string>"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    }
+  ],
+  "silver/nps_surveys": [
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "survey_date",
+      "tipo": "date"
+    },
+    {
+      "columna": "nps_score",
+      "tipo": "double"
+    },
+    {
+      "columna": "comment",
+      "tipo": "string"
+    },
+    {
+      "columna": "dq_flags",
+      "tipo": "array<string>"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    }
+  ],
+  "silver/orgs_scd2": [
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_name",
+      "tipo": "string"
+    },
+    {
+      "columna": "industry",
+      "tipo": "string"
+    },
+    {
+      "columna": "hq_region",
+      "tipo": "string"
+    },
+    {
+      "columna": "plan_tier",
+      "tipo": "string"
+    },
+    {
+      "columna": "is_enterprise",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "signup_date",
+      "tipo": "date"
+    },
+    {
+      "columna": "sales_rep",
+      "tipo": "string"
+    },
+    {
+      "columna": "lifecycle_stage",
+      "tipo": "string"
+    },
+    {
+      "columna": "marketing_source",
+      "tipo": "string"
+    },
+    {
+      "columna": "nps_score",
+      "tipo": "double"
+    },
+    {
+      "columna": "valid_from",
+      "tipo": "date"
+    },
+    {
+      "columna": "valid_to",
+      "tipo": "date"
+    },
+    {
+      "columna": "is_current",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    }
+  ],
+  "silver/resources": [
+    {
+      "columna": "resource_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "service",
+      "tipo": "string"
+    },
+    {
+      "columna": "region",
+      "tipo": "string"
+    },
+    {
+      "columna": "created_at",
+      "tipo": "date"
+    },
+    {
+      "columna": "state",
+      "tipo": "string"
+    },
+    {
+      "columna": "tags_json",
+      "tipo": "string"
+    },
+    {
+      "columna": "tags",
+      "tipo": "array<string>"
+    },
+    {
+      "columna": "dq_flags",
+      "tipo": "array<string>"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    }
+  ],
+  "silver/support_tickets": [
+    {
+      "columna": "ticket_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "category",
+      "tipo": "string"
+    },
+    {
+      "columna": "severity",
+      "tipo": "string"
+    },
+    {
+      "columna": "created_at",
+      "tipo": "date"
+    },
+    {
+      "columna": "resolved_at",
+      "tipo": "date"
+    },
+    {
+      "columna": "csat",
+      "tipo": "double"
+    },
+    {
+      "columna": "sla_breached",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "dq_flags",
+      "tipo": "array<string>"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    }
+  ],
+  "silver/usage_events": [
+    {
+      "columna": "event_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "resource_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "service",
+      "tipo": "string"
+    },
+    {
+      "columna": "region",
+      "tipo": "string"
+    },
+    {
+      "columna": "metric",
+      "tipo": "string"
+    },
+    {
+      "columna": "unit",
+      "tipo": "string"
+    },
+    {
+      "columna": "event_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "schema_version",
+      "tipo": "int"
+    },
+    {
+      "columna": "value_numeric",
+      "tipo": "double"
+    },
+    {
+      "columna": "requests",
+      "tipo": "double"
+    },
+    {
+      "columna": "cpu_hours",
+      "tipo": "double"
+    },
+    {
+      "columna": "storage_gb_hours",
+      "tipo": "double"
+    },
+    {
+      "columna": "cost_usd_increment",
+      "tipo": "double"
+    },
+    {
+      "columna": "carbon_kg",
+      "tipo": "double"
+    },
+    {
+      "columna": "genai_tokens",
+      "tipo": "bigint"
+    },
+    {
+      "columna": "org_name",
+      "tipo": "string"
+    },
+    {
+      "columna": "industry",
+      "tipo": "string"
+    },
+    {
+      "columna": "hq_region",
+      "tipo": "string"
+    },
+    {
+      "columna": "plan_tier",
+      "tipo": "string"
+    },
+    {
+      "columna": "is_enterprise",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "resource_state",
+      "tipo": "string"
+    },
+    {
+      "columna": "is_cost_anomaly",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "anomaly_score",
+      "tipo": "double"
+    },
+    {
+      "columna": "dq_flags",
+      "tipo": "array<string>"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "event_date",
+      "tipo": "date"
+    }
+  ],
+  "silver/users": [
+    {
+      "columna": "user_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "org_id",
+      "tipo": "string"
+    },
+    {
+      "columna": "email",
+      "tipo": "string"
+    },
+    {
+      "columna": "role",
+      "tipo": "string"
+    },
+    {
+      "columna": "active",
+      "tipo": "boolean"
+    },
+    {
+      "columna": "created_at",
+      "tipo": "date"
+    },
+    {
+      "columna": "last_login",
+      "tipo": "date"
+    },
+    {
+      "columna": "dq_flags",
+      "tipo": "array<string>"
+    },
+    {
+      "columna": "ingest_ts",
+      "tipo": "timestamp"
+    },
+    {
+      "columna": "source_file",
+      "tipo": "string"
+    },
+    {
+      "columna": "run_id",
+      "tipo": "string"
+    }
+  ]
+}

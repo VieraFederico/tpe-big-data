@@ -14,16 +14,16 @@ Checklist de la consigna (sección 9.2) y dónde se ve cada ítem. La relación 
 | :--- | :--- |
 | Correcciones de la primera entrega | [Plan de correcciones](docs/plan-correcciones.md) |
 | Arquitectura actualizada | [Diagramas](docs/diagramas/arquitectura.md) |
-| Tres maestros batch en Bronze | [Data lake](docs/data-lake.md#datasets-y-particiones), `evidence/entrega-2/conteos.csv` (pendiente de corrida) |
+| Tres maestros batch en Bronze | [Data lake](docs/data-lake.md#datasets-y-particiones), [`conteos.csv`](evidence/entrega-2/conteos.csv) |
 | Streaming con esquema, watermark, dedupe, late data y checkpoint | [`src/bronze/streaming/ingest.py`](src/bronze/streaming/ingest.py), [`DECISIONS.md`](DECISIONS.md) D-11 |
 | Silver para eventos y al menos un maestro | [Diccionario de datos](docs/diccionario-datos.md#silver) |
 | Tres features calculadas | [`gold/org_daily_usage_by_service`](docs/diccionario-datos.md#goldorg_daily_usage_by_service) |
-| Tres reglas de calidad y quarantine | [Catálogo de calidad](docs/calidad.md), `evidence/entrega-2/quality/` (pendiente de corrida) |
+| Tres reglas de calidad y quarantine | [Catálogo de calidad](docs/calidad.md), [`evidence/entrega-2/quality/`](evidence/entrega-2/quality/) |
 | Mart `org_daily_usage_by_service` en Gold | [Diccionario de datos](docs/diccionario-datos.md#gold), [MapReduce](docs/mapreduce.md) |
 | Keyspace y tabla Cassandra/AstraDB poblada | [Serving](docs/serving.md#evidencia-de-la-entrega-2) |
 | Dos consultas CQL con resultados | [`evidence/entrega-2/queries/`](evidence/entrega-2/queries/) |
 | Analítica (detección de anomalías) | [Analítica](docs/analitica.md) |
-| Idempotencia demostrada | `evidence/entrega-2/idempotencia.md` (pendiente de corrida) |
+| Idempotencia demostrada | [`evidence/entrega-2/idempotencia.md`](evidence/entrega-2/idempotencia.md) |
 | Gobierno preliminar | [Gobierno](docs/gobierno/README.md) |
 | README Quickstart, logs y evidencias | [Quickstart](#quickstart-con-docker), [índice de evidencia](evidence/entrega-2/README.md) |
 | Backlog final priorizado | [Backlog](docs/backlog.md) |

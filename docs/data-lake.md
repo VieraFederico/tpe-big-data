@@ -20,7 +20,7 @@ Las rutas siguen la forma `{zona}/{dataset}/{partition}=valor/`, por ejemplo `br
 
 Todo lo que no es Landing ni manifests es Parquet con compresión snappy (el default de Spark): se leen solo las columnas que usa cada consulta y las columnas opcionales de los eventos v2 conviven con los v1 sin problemas. Los manifests son JSON chicos para leerlos sin Spark.
 
-Antes de escribir, las rows se agrupan por la columna de partición (`REBALANCE` en batch, `repartition` en los micro-lotes del stream), así cada partition queda en pocos archivos. `evidence/entrega-2/storage.csv` (pendiente de corrida) tiene particiones, archivos y MB de cada dataset en la corrida de entrega.
+Antes de escribir, las rows se agrupan por la columna de partición (`REBALANCE` en batch, `repartition` en los micro-lotes del stream), así cada partition queda en pocos archivos. [`evidence/entrega-2/storage.csv`](../evidence/entrega-2/storage.csv) tiene particiones, archivos y MB de cada dataset en la corrida de entrega.
 
 ## Datasets y particiones
 

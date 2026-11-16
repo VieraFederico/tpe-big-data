@@ -7,7 +7,7 @@ Cada regla tiene una acción según qué tan grave es el problema: si la row no 
 - Un valor null nunca está "fuera de rango": las reglas de rango solo miran valores presentes.
 - Cada corrida de `silver` deja en `evidence/quality/<run_id>/` el archivo `rule_counts.csv` (una row por regla, aunque afecte 0 rows) y `samples/<dataset>__<rule_id>.csv` con hasta 20 rows de cada regla que tuvo casos. Las rows rechazadas completas están en `quarantine/` (ver [data lake](data-lake.md)).
 
-Las cantidades de abajo son de la corrida `20261114T221819Z-ad1d25` sobre el dataset completo ([`rule_counts.csv`](../evidence/quality/20261114T221819Z-ad1d25/rule_counts.csv)). Las de la corrida de entrega van a `evidence/entrega-2/quality/` (pendiente de corrida).
+Las cantidades y muestras de abajo son de la corrida de entrega del 2026-11-16 sobre el dataset completo ([`evidence/entrega-2/quality/rule_counts.csv`](../evidence/entrega-2/quality/rule_counts.csv)). Coinciden con las de la corrida anterior `20261114T221819Z-ad1d25`.
 
 ## Bronze
 
@@ -30,11 +30,11 @@ Además, `bronze_batch` deja una row por clave natural (gana la del último arch
 | `SLV_SCHEMA_VERSION` | `schema_version` no es 1 ni 2; v1 con `carbon_kg` o `genai_tokens`; v2 sin `carbon_kg`; `genai_tokens` en un service que no es `genai` | quarantine | 0 | |
 | `SLV_VALUE_NOT_NUMERIC` | `value` presente que no se puede convertir a número | quarantine | 0 | |
 | `SLV_UNIT_UNKNOWN` | `value` presente, `unit` null y `metric` sin unidad conocida | quarantine | 0 | |
-| `SLV_COST_INVALID` | `cost_usd_increment` null o menor a -0.01 (D-13) | quarantine | 211 | [muestra](../evidence/quality/20261114T221819Z-ad1d25/samples/usage_events__SLV_COST_INVALID.csv) |
+| `SLV_COST_INVALID` | `cost_usd_increment` null o menor a -0.01 (D-13) | quarantine | 211 | [muestra](../evidence/entrega-2/quality/samples/usage_events__SLV_COST_INVALID.csv) |
 | `SLV_DUPLICATE_EVENT_ID` | `event_id` repetido: queda el de menor `ingest_ts` (después `source_file` y el JSON del record) | descarte (se cuenta, no va a quarantine) | 0 | |
-| `VALUE_NULL` | `value` null; `value_numeric` queda null | flag | 873 | [muestra](../evidence/quality/20261114T221819Z-ad1d25/samples/usage_events__VALUE_NULL.csv) |
-| `UNIT_IMPUTED` | `unit` null con `value` presente: se completa desde `metric` (`requests → count`, `cpu_hours → hours`, `storage_gb_hours → gb_hours`) | corrige y marca | 2033 | [muestra](../evidence/quality/20261114T221819Z-ad1d25/samples/usage_events__UNIT_IMPUTED.csv) |
-| `COST_NEGATIVE_SMALL` | `-0.01 <= cost_usd_increment < 0`; el cost queda como está | flag | 5 | [muestra](../evidence/quality/20261114T221819Z-ad1d25/samples/usage_events__COST_NEGATIVE_SMALL.csv) |
+| `VALUE_NULL` | `value` null; `value_numeric` queda null | flag | 873 | [muestra](../evidence/entrega-2/quality/samples/usage_events__VALUE_NULL.csv) |
+| `UNIT_IMPUTED` | `unit` null con `value` presente: se completa desde `metric` (`requests → count`, `cpu_hours → hours`, `storage_gb_hours → gb_hours`) | corrige y marca | 2033 | [muestra](../evidence/entrega-2/quality/samples/usage_events__UNIT_IMPUTED.csv) |
+| `COST_NEGATIVE_SMALL` | `-0.01 <= cost_usd_increment < 0`; el cost queda como está | flag | 5 | [muestra](../evidence/entrega-2/quality/samples/usage_events__COST_NEGATIVE_SMALL.csv) |
 | `ORG_ORPHAN` | `org_id` sin organización en `silver/customers_orgs` | flag | 0 | |
 | `RESOURCE_ORPHAN` | `resource_id` sin recurso en `silver/resources` | flag | 0 | |
 
@@ -48,14 +48,14 @@ Ninguna regla de los maestros manda rows a quarantine: una clave null ya la rech
 
 | `rule_id` | Dataset | Condición | Acción | Rows | Muestra |
 | :--- | :--- | :--- | :--- | ---: | :--- |
-| `NPS_OUT_OF_RANGE` | `customers_orgs` | `nps_score` fuera de [-100, 100]; pasa a null | corrige y marca | 1 | [muestra](../evidence/quality/20261114T221819Z-ad1d25/samples/customers_orgs__NPS_OUT_OF_RANGE.csv) |
+| `NPS_OUT_OF_RANGE` | `customers_orgs` | `nps_score` fuera de [-100, 100]; pasa a null | corrige y marca | 1 | [muestra](../evidence/entrega-2/quality/samples/customers_orgs__NPS_OUT_OF_RANGE.csv) |
 | `NPS_OUT_OF_RANGE` | `nps_surveys` | ídem | corrige y marca | 0 | |
-| `LOGIN_BEFORE_CREATED` | `users` | `last_login` anterior a `created_at` | flag | 232 | [muestra](../evidence/quality/20261114T221819Z-ad1d25/samples/users__LOGIN_BEFORE_CREATED.csv) |
+| `LOGIN_BEFORE_CREATED` | `users` | `last_login` anterior a `created_at` | flag | 232 | [muestra](../evidence/entrega-2/quality/samples/users__LOGIN_BEFORE_CREATED.csv) |
 | `TAGS_INVALID_JSON` | `resources` | `tags_json` no es un array JSON válido; `tags` queda null | flag | 0 | |
-| `CREDITS_IMPUTED` | `billing_monthly` | `credits` null; pasa a 0.0 | corrige y marca | 137 | [muestra](../evidence/quality/20261114T221819Z-ad1d25/samples/billing_monthly__CREDITS_IMPUTED.csv) |
-| `SUBTOTAL_NEGATIVE` | `billing_monthly` | `subtotal` negativo | flag | 13 | [muestra](../evidence/quality/20261114T221819Z-ad1d25/samples/billing_monthly__SUBTOTAL_NEGATIVE.csv) |
-| `FX_USD_NOT_ONE` | `billing_monthly` | `currency = USD` con `exchange_rate_to_usd` distinto de 1 (D-17) | flag | 160 | [muestra](../evidence/quality/20261114T221819Z-ad1d25/samples/billing_monthly__FX_USD_NOT_ONE.csv) |
-| `CSAT_OUT_OF_RANGE` | `support_tickets` | `csat` fuera de [1, 5]; pasa a null | corrige y marca | 40 | [muestra](../evidence/quality/20261114T221819Z-ad1d25/samples/support_tickets__CSAT_OUT_OF_RANGE.csv) |
+| `CREDITS_IMPUTED` | `billing_monthly` | `credits` null; pasa a 0.0 | corrige y marca | 137 | [muestra](../evidence/entrega-2/quality/samples/billing_monthly__CREDITS_IMPUTED.csv) |
+| `SUBTOTAL_NEGATIVE` | `billing_monthly` | `subtotal` negativo | flag | 13 | [muestra](../evidence/entrega-2/quality/samples/billing_monthly__SUBTOTAL_NEGATIVE.csv) |
+| `FX_USD_NOT_ONE` | `billing_monthly` | `currency = USD` con `exchange_rate_to_usd` distinto de 1 (D-17) | flag | 160 | [muestra](../evidence/entrega-2/quality/samples/billing_monthly__FX_USD_NOT_ONE.csv) |
+| `CSAT_OUT_OF_RANGE` | `support_tickets` | `csat` fuera de [1, 5]; pasa a null | corrige y marca | 40 | [muestra](../evidence/entrega-2/quality/samples/support_tickets__CSAT_OUT_OF_RANGE.csv) |
 
 Las categorías de los maestros (`service`, `region`, `severity`, `plan_tier`, `channel`, `state`) se pasan a minúscula y `currency` a mayúscula.
 

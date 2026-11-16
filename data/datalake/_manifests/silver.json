@@ -1,6 +1,6 @@
 {
-  "run_id": "20261114T221819Z-ad1d25",
-  "written_at": "2026-11-14T22:22:20Z",
+  "run_id": "20261116T191254Z-d2bc0d",
+  "written_at": "2026-11-16T19:16:58Z",
   "datasets": {
     "usage_events": {
       "bronze_rows": 43200,

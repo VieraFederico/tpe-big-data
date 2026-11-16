@@ -1,7 +1,7 @@
 {
-  "run_id": "20261114T221819Z-ad1d25",
-  "written_at": "2026-11-14T22:18:43Z",
-  "ingest_date": "2026-11-14",
+  "run_id": "20261116T191254Z-d2bc0d",
+  "written_at": "2026-11-16T19:15:05Z",
+  "ingest_date": "2026-11-16",
   "datasets": {
     "customers_orgs": {
       "read": 80,

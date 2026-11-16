@@ -1,0 +1,7 @@
+2026-11-16 19:12:42,917 INFO src.serving.evidence_params - Organización con más costo a 2025-08-31: org_chj755nf (1039.9834 USD)
+2026-11-16 19:12:43,490 INFO evidence_queries - Parámetros: {'org_id': 'org_chj755nf', 'from_date': '2025-08-18', 'to_date': '2025-08-31', 'as_of_date': '2025-08-31', 'n': 5}
+2026-11-16 19:12:49,802 INFO src.serving.cassandra_client - Sesión CQL abierta (target=astra, keyspace=cloud_analytics)
+2026-11-16 19:12:50,158 INFO queries - Consulta q1_daily_usage_by_range: 59 filas en 0.350s
+2026-11-16 19:12:50,170 INFO queries - Evidencia guardada en evidence/entrega-2/queries/q1_daily_usage_by_range.txt y evidence/entrega-2/queries/q1_daily_usage_by_range.csv
+2026-11-16 19:12:50,468 INFO queries - Consulta q2_top_services_14d: 5 filas en 0.293s
+2026-11-16 19:12:50,494 INFO queries - Evidencia guardada en evidence/entrega-2/queries/q2_top_services_14d.txt y evidence/entrega-2/queries/q2_top_services_14d.csv
